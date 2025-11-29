@@ -1,0 +1,3 @@
+putty synology
+
+sudo ~/google-cloud-sdk/bin/gcloud run deploy gichttagebuchservice --source . --region europe-west1 --flags-file env-vars.yaml

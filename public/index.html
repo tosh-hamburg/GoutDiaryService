@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Harnsäure Tracker - Datenübersicht</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+        }
+
+        .search-section {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .search-form {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: end;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .btn:hover {
+            background: #5568d3;
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .stat-card h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .chart-container h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .data-table {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            overflow-x: auto;
+        }
+
+        .data-table h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #555;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .user-info {
+            background: #e8f0fe;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .user-info strong {
+            color: #667eea;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        .badge-yes {
+            background: #4caf50;
+            color: white;
+        }
+
+        .badge-no {
+            background: #ccc;
+            color: #666;
+        }
+
+        .tree-container {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .tree-item {
+            margin: 10px 0;
+            border-left: 3px solid #667eea;
+            padding-left: 15px;
+        }
+
+        .tree-header {
+            font-weight: 600;
+            color: #667eea;
+            cursor: pointer;
+            padding: 10px;
+            background: #f5f5f5;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tree-header:hover {
+            background: #e8f0fe;
+        }
+
+        .tree-content {
+            margin-left: 20px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .tree-content.expanded {
+            display: block;
+        }
+
+        .tree-toggle {
+            font-size: 12px;
+            transition: transform 0.3s;
+        }
+
+        .tree-toggle.expanded {
+            transform: rotate(90deg);
+        }
+
+        .tree-subitem {
+            margin: 5px 0;
+            padding: 8px;
+            background: #fafafa;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .tree-subitem-header {
+            font-weight: 600;
+            color: #764ba2;
+            margin-bottom: 5px;
+        }
+
+        .tree-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .tree-stat {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .tree-stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .tree-stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Harnsäure Tracker - Datenübersicht</h1>
+            <p>Anonyme Datenanalyse und Visualisierung</p>
+        </div>
+
+        <div class="search-section">
+            <button type="button" class="btn" id="loadAllBtn" style="width: 100%;">Alle Daten laden (Baumansicht)</button>
+        </div>
+
+        <div id="errorContainer"></div>
+        <div id="treeContainer" class="tree-container" style="display: none;"></div>
+
+        <div id="userInfoContainer"></div>
+
+        <div id="statsContainer" class="stats-grid" style="display: none;">
+            <div class="stat-card">
+                <h3>Harnsäurewerte</h3>
+                <div class="stat-value" id="uricAcidCount">-</div>
+                <div class="stat-label">Anzahl Messungen</div>
+            </div>
+            <div class="stat-card">
+                <h3>Durchschnitt</h3>
+                <div class="stat-value" id="avgUricAcid">-</div>
+                <div class="stat-label">mg/dL</div>
+            </div>
+            <div class="stat-card">
+                <h3>Minimum</h3>
+                <div class="stat-value" id="minUricAcid">-</div>
+                <div class="stat-label">mg/dL</div>
+            </div>
+            <div class="stat-card">
+                <h3>Maximum</h3>
+                <div class="stat-value" id="maxUricAcid">-</div>
+                <div class="stat-label">mg/dL</div>
+            </div>
+            <div class="stat-card">
+                <h3>Mahlzeiten</h3>
+                <div class="stat-value" id="mealCount">-</div>
+                <div class="stat-label">Anzahl Mahlzeiten</div>
+            </div>
+            <div class="stat-card">
+                <h3>Ø Purin/Tag</h3>
+                <div class="stat-value" id="avgPurin">-</div>
+                <div class="stat-label">mg</div>
+            </div>
+        </div>
+
+        <div id="chartsContainer" style="display: none;">
+            <div class="chart-container">
+                <h2>Harnsäurewerte - Verlauf</h2>
+                <canvas id="uricAcidChart"></canvas>
+            </div>
+
+            <div class="chart-container">
+                <h2>Purin-Aufnahme - Verlauf</h2>
+                <canvas id="purinChart"></canvas>
+            </div>
+        </div>
+
+        <div id="tablesContainer" style="display: none;">
+            <div class="data-table">
+                <h2>Harnsäurewerte</h2>
+                <div id="uricAcidTableContainer"></div>
+            </div>
+
+            <div class="data-table">
+                <h2>Mahlzeiten</h2>
+                <div id="mealsTableContainer"></div>
+            </div>
+        </div>
+
+        <div id="loadingContainer" class="loading" style="display: none;">
+            <p>Lade Daten...</p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/v1';
+        let uricAcidChart = null;
+        let purinChart = null;
+        let currentUser = null;
+
+        // Prüfe Anmeldung beim Laden der Seite
+        async function checkAuth() {
+            try {
+                const response = await fetch('/auth/me');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        currentUser = data.data;
+                        updateUIForUser();
+                        return true;
+                    }
+                }
+                // Nicht angemeldet, weiterleiten zur Login-Seite (nur in Produktion)
+                // Im Development-Modus wird /auth/me immer einen Mock-User zurückgeben
+                if (window.location.hostname !== 'dev.gout-diary.com' && !window.location.hostname.includes('127.0.0.1')) {
+                    window.location.href = '/login.html';
+                }
+                return false;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                // Nur in Produktion weiterleiten
+                if (window.location.hostname !== 'dev.gout-diary.com' && !window.location.hostname.includes('127.0.0.1')) {
+                    window.location.href = '/login.html';
+                }
+                return false;
+            }
+        }
+
+        function updateUIForUser() {
+            // Zeige User-Info im Header
+            const header = document.querySelector('.header');
+            if (header && currentUser) {
+                const userInfo = document.createElement('div');
+                userInfo.style.cssText = 'margin-top: 15px; padding-top: 15px; border-top: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;';
+                userInfo.innerHTML = `
+                    <div>
+                        <strong>Angemeldet als:</strong> ${currentUser.email}
+                        ${currentUser.isAdmin ? '<span style="background: #4caf50; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px;">Admin</span>' : ''}
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        ${currentUser.isAdmin ? '<button onclick="loadApiKeys()" style="padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">API-Keys verwalten</button>' : ''}
+                        <button onclick="logout()" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">Abmelden</button>
+                    </div>
+                `;
+                header.appendChild(userInfo);
+            }
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch('/auth/logout', { method: 'POST' });
+                if (response.ok || response.redirected) {
+                    window.location.href = '/login.html';
+                }
+            } catch (error) {
+                console.error('Logout failed:', error);
+                window.location.href = '/login.html';
+            }
+        }
+
+        // Prüfe Auth beim Laden
+        checkAuth().then(isAuthenticated => {
+            if (isAuthenticated) {
+                document.getElementById('loadAllBtn').addEventListener('click', async () => {
+                    await loadAllData();
+                });
+            }
+        });
+
+        function showError(message) {
+            const container = document.getElementById('errorContainer');
+            container.innerHTML = `<div class="error">${message}</div>`;
+        }
+
+        function clearError() {
+            document.getElementById('errorContainer').innerHTML = '';
+        }
+
+        async function loadAllData() {
+            const loadBtn = document.getElementById('loadAllBtn');
+            const loadingContainer = document.getElementById('loadingContainer');
+            const treeContainer = document.getElementById('treeContainer');
+            const statsContainer = document.getElementById('statsContainer');
+            const chartsContainer = document.getElementById('chartsContainer');
+            const tablesContainer = document.getElementById('tablesContainer');
+
+            loadBtn.disabled = true;
+            loadingContainer.style.display = 'block';
+            treeContainer.style.display = 'none';
+            statsContainer.style.display = 'none';
+            chartsContainer.style.display = 'none';
+            tablesContainer.style.display = 'none';
+            clearError();
+
+            try {
+                // Load all users
+                const usersResponse = await fetch(`${API_BASE}/users`, {
+                    credentials: 'include'
+                });
+                const usersData = await usersResponse.json();
+
+                if (!usersData.success) {
+                    showError('Fehler beim Laden der User-Daten');
+                    return;
+                }
+
+                const users = usersData.data;
+                const treeHTML = [];
+
+                // Load data for each user
+                for (const user of users) {
+                    const userGuid = user.guid;
+                    
+                    // Load uric acid values
+                    const uricAcidResponse = await fetch(`${API_BASE}/uric-acid-values?userId=${userGuid}`, {
+                        credentials: 'include'
+                    });
+                    const uricAcidData = await uricAcidResponse.json();
+                    
+                    // Load uric acid stats
+                    const statsResponse = await fetch(`${API_BASE}/uric-acid-values/stats?userId=${userGuid}&days=365`, {
+                        credentials: 'include'
+                    });
+                    const statsData = await statsResponse.json();
+                    
+                    // Load meals
+                    const mealsResponse = await fetch(`${API_BASE}/meals?userId=${userGuid}`, {
+                        credentials: 'include'
+                    });
+                    const mealsData = await mealsResponse.json();
+                    
+                    // Load meal stats
+                    const mealStatsResponse = await fetch(`${API_BASE}/meals/stats?userId=${userGuid}&days=365`, {
+                        credentials: 'include'
+                    });
+                    const mealStatsData = await mealStatsResponse.json();
+
+                    const genderMap = {
+                        'MALE': 'Männlich',
+                        'FEMALE': 'Weiblich',
+                        'DIVERSE': 'Divers'
+                    };
+
+                    const userInfo = [];
+                    if (user.gender) userInfo.push(`Geschlecht: ${genderMap[user.gender] || user.gender}`);
+                    if (user.birthYear) userInfo.push(`Geburtsjahr: ${user.birthYear}`);
+                    userInfo.push(`Registriert: ${new Date(user.createdAt).toLocaleString('de-DE')}`);
+                    
+                    // Admin-Badge hinzufügen
+                    const adminBadge = user.isAdmin ? '<span style="background: #4caf50; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; font-weight: bold;">🔑 Admin</span>' : '';
+                    const emailInfo = user.email ? `<span style="color: #667eea; margin-left: 10px;"><strong>Email:</strong> ${user.email}</span>` : '';
+
+                    treeHTML.push(`
+                        <div class="tree-item">
+                            <div class="tree-header" onclick="toggleTreeItem(this)">
+                                <span class="tree-toggle">▶</span>
+                                <span><strong>GUID:</strong> ${user.guid}</span>
+                                ${adminBadge}
+                                ${emailInfo}
+                                ${userInfo.length > 0 ? `<span style="color: #666; margin-left: 10px;">(${userInfo.join(', ')})</span>` : ''}
+                            </div>
+                            <div class="tree-content">
+                                <div class="tree-stats">
+                                    <div class="tree-stat">
+                                        <div class="tree-stat-label">Harnsäurewerte</div>
+                                        <div class="tree-stat-value">${uricAcidData.data?.length || 0}</div>
+                                    </div>
+                                    <div class="tree-stat">
+                                        <div class="tree-stat-label">Ø Harnsäure</div>
+                                        <div class="tree-stat-value">${statsData.data?.average ? statsData.data.average.toFixed(2) : '-'} mg/dL</div>
+                                    </div>
+                                    <div class="tree-stat">
+                                        <div class="tree-stat-label">Mahlzeiten</div>
+                                        <div class="tree-stat-value">${mealsData.data?.length || 0}</div>
+                                    </div>
+                                    <div class="tree-stat">
+                                        <div class="tree-stat-label">Ø Purin/Tag</div>
+                                        <div class="tree-stat-value">${mealStatsData.data?.avgPurin || 0} mg</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="tree-subitem">
+                                    <div class="tree-subitem-header">Harnsäurewerte (letzte 10):</div>
+                                    ${(uricAcidData.data || []).slice(0, 10).map(value => `
+                                        <div style="margin: 5px 0; padding: 5px; background: white; border-radius: 3px;">
+                                            ${new Date(value.timestamp).toLocaleString('de-DE')} - 
+                                            <strong>${value.value.toFixed(2)} mg/dL</strong>
+                                            ${value.goutAttack ? ' <span class="badge badge-yes">Gichtanfall</span>' : ''}
+                                            ${value.notes ? ` - ${value.notes}` : ''}
+                                        </div>
+                                    `).join('')}
+                                    ${(uricAcidData.data || []).length > 10 ? `<div style="color: #666; font-size: 12px; margin-top: 5px;">... und ${(uricAcidData.data || []).length - 10} weitere</div>` : ''}
+                                </div>
+
+                                <div class="tree-subitem">
+                                    <div class="tree-subitem-header">Mahlzeiten (letzte 10):</div>
+                                    ${(mealsData.data || []).slice(0, 10).map(meal => {
+                                        const mealTypeMap = {
+                                            'BREAKFAST': 'Frühstück',
+                                            'LUNCH': 'Mittagessen',
+                                            'DINNER': 'Abendessen',
+                                            'SNACK': 'Snack'
+                                        };
+                                        const components = meal.components || [];
+                                        const componentsList = components.length > 0 
+                                            ? `<div style="margin-top: 5px; padding-left: 15px; font-size: 12px; color: #666;">
+                                                <strong>Komponenten:</strong> ${components.map(c => 
+                                                    `${c.foodItemName} (${c.estimatedWeight}g, ${c.purin}mg Purin)`
+                                                ).join(', ')}
+                                            </div>`
+                                            : '';
+                                        return `
+                                            <div style="margin: 5px 0; padding: 5px; background: white; border-radius: 3px;">
+                                                ${new Date(meal.timestamp).toLocaleString('de-DE')} - 
+                                                <strong>${mealTypeMap[meal.mealType] || meal.mealType}</strong>
+                                                ${meal.name ? `: ${meal.name}` : ''}
+                                                - ${meal.totalPurin} mg Purin, ${meal.totalCalories} kcal
+                                                ${componentsList}
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                    ${(mealsData.data || []).length > 10 ? `<div style="color: #666; font-size: 12px; margin-top: 5px;">... und ${(mealsData.data || []).length - 10} weitere</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `);
+                }
+
+                // Erstelle Benutzer-Tabelle
+                let usersTableHTML = `
+                    <div style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 30px;">
+                        <h2 style="color: #667eea; margin-bottom: 20px;">Registrierte Benutzer (${users.length})</h2>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f5f5f5; border-bottom: 2px solid #667eea;">
+                                    <th style="padding: 12px; text-align: left; font-weight: 600;">Email</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600;">GUID</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600;">Rolle</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600;">Registriert</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600;">Geschlecht</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600;">Geburtsjahr</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                users.forEach((user, index) => {
+                    const roleBadge = user.isAdmin 
+                        ? '<span style="background: #4caf50; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: bold;">🔑 Super-Admin</span>'
+                        : '<span style="background: #9e9e9e; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Benutzer</span>';
+                    
+                    const genderMap = {
+                        'MALE': 'Männlich',
+                        'FEMALE': 'Weiblich',
+                        'DIVERSE': 'Divers'
+                    };
+                    
+                    usersTableHTML += `
+                        <tr style="border-bottom: 1px solid #e0e0e0; ${index % 2 === 0 ? 'background: #fafafa;' : ''}">
+                            <td style="padding: 12px;">${user.email || '<span style="color: #999;">-</span>'}</td>
+                            <td style="padding: 12px; font-family: monospace; font-size: 12px;">${user.guid}</td>
+                            <td style="padding: 12px;">${roleBadge}</td>
+                            <td style="padding: 12px;">${new Date(user.createdAt).toLocaleString('de-DE')}</td>
+                            <td style="padding: 12px;">${user.gender ? genderMap[user.gender] || user.gender : '<span style="color: #999;">-</span>'}</td>
+                            <td style="padding: 12px;">${user.birthYear || '<span style="color: #999;">-</span>'}</td>
+                        </tr>
+                    `;
+                });
+                
+                usersTableHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                if (treeHTML.length === 0) {
+                    treeContainer.innerHTML = usersTableHTML + '<div style="text-align: center; padding: 40px; color: #666;">Keine Daten gefunden</div>';
+                } else {
+                    treeContainer.innerHTML = usersTableHTML + `
+                        <h2 style="color: #667eea; margin-bottom: 20px;">Alle erfassten Daten (${users.length} Benutzer)</h2>
+                        ${treeHTML.join('')}
+                    `;
+                }
+
+                treeContainer.style.display = 'block';
+            } catch (error) {
+                console.error('Error loading all data:', error);
+                showError(`Fehler: ${error.message}`);
+            } finally {
+                loadBtn.disabled = false;
+                loadingContainer.style.display = 'none';
+            }
+        }
+
+        function toggleTreeItem(header) {
+            const content = header.nextElementSibling;
+            const toggle = header.querySelector('.tree-toggle');
+            
+            if (content.classList.contains('expanded')) {
+                content.classList.remove('expanded');
+                toggle.classList.remove('expanded');
+            } else {
+                content.classList.add('expanded');
+                toggle.classList.add('expanded');
+            }
+        }
+
+        async function loadData(userGuid, days) {
+            const loadBtn = document.getElementById('loadBtn');
+            const loadingContainer = document.getElementById('loadingContainer');
+            const statsContainer = document.getElementById('statsContainer');
+            const chartsContainer = document.getElementById('chartsContainer');
+            const tablesContainer = document.getElementById('tablesContainer');
+
+            loadBtn.disabled = true;
+            loadingContainer.style.display = 'block';
+            statsContainer.style.display = 'none';
+            chartsContainer.style.display = 'none';
+            tablesContainer.style.display = 'none';
+            clearError();
+
+            try {
+                // Load user info
+                const userResponse = await fetch(`${API_BASE}/users/${userGuid}`, {
+                    credentials: 'include'
+                });
+                if (userResponse.ok) {
+                    const userData = await userResponse.json();
+                    if (userData.success) {
+                        displayUserInfo(userData.data);
+                    }
+                }
+
+                // Load uric acid values
+                const uricAcidResponse = await fetch(`${API_BASE}/uric-acid-values?userId=${userGuid}`, {
+                    credentials: 'include'
+                });
+                const uricAcidData = await uricAcidResponse.json();
+
+                // Load uric acid stats
+                const statsResponse = await fetch(`${API_BASE}/uric-acid-values/stats?userId=${userGuid}&days=${days}`, {
+                    credentials: 'include'
+                });
+                const statsData = await statsResponse.json();
+
+                // Load meals
+                const mealsResponse = await fetch(`${API_BASE}/meals?userId=${userGuid}`, {
+                    credentials: 'include'
+                });
+                const mealsData = await mealsResponse.json();
+
+                // Load meal stats
+                const mealStatsResponse = await fetch(`${API_BASE}/meals/stats?userId=${userGuid}&days=${days}`, {
+                    credentials: 'include'
+                });
+                const mealStatsData = await mealStatsResponse.json();
+
+                if (uricAcidData.success && mealsData.success) {
+                    displayStats(statsData.data, mealStatsData.data);
+                    displayCharts(uricAcidData.data, mealsData.data);
+                    displayTables(uricAcidData.data, mealsData.data);
+                    
+                    statsContainer.style.display = 'grid';
+                    chartsContainer.style.display = 'block';
+                    tablesContainer.style.display = 'block';
+                } else {
+                    showError('Fehler beim Laden der Daten');
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                showError(`Fehler: ${error.message}`);
+            } finally {
+                loadBtn.disabled = false;
+                loadingContainer.style.display = 'none';
+            }
+        }
+
+        function displayUserInfo(user) {
+            const container = document.getElementById('userInfoContainer');
+            const genderMap = {
+                'MALE': 'Männlich',
+                'FEMALE': 'Weiblich',
+                'DIVERSE': 'Divers'
+            };
+            
+            const adminBadge = user.isAdmin ? '<span style="background: #4caf50; color: white; padding: 4px 12px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 10px;">🔑 Super-Admin</span>' : '<span style="background: #9e9e9e; color: white; padding: 4px 12px; border-radius: 6px; font-size: 14px; margin-left: 10px;">Benutzer</span>';
+            
+            container.innerHTML = `
+                <div class="user-info">
+                    <strong>Benutzer-Information:</strong> ${adminBadge}<br>
+                    GUID: ${user.guid}<br>
+                    ${user.email ? `Email: ${user.email}<br>` : ''}
+                    ${user.gender ? `Geschlecht: ${genderMap[user.gender] || user.gender}<br>` : ''}
+                    ${user.birthYear ? `Geburtsjahr: ${user.birthYear}<br>` : ''}
+                    Registriert: ${new Date(user.createdAt).toLocaleString('de-DE')}
+                </div>
+            `;
+        }
+
+        function displayStats(uricAcidStats, mealStats) {
+            document.getElementById('uricAcidCount').textContent = uricAcidStats.count || 0;
+            document.getElementById('avgUricAcid').textContent = uricAcidStats.average ? uricAcidStats.average.toFixed(2) : '-';
+            document.getElementById('minUricAcid').textContent = uricAcidStats.min ? uricAcidStats.min.toFixed(2) : '-';
+            document.getElementById('maxUricAcid').textContent = uricAcidStats.max ? uricAcidStats.max.toFixed(2) : '-';
+            document.getElementById('mealCount').textContent = mealStats.mealCount || 0;
+            document.getElementById('avgPurin').textContent = mealStats.avgPurin || 0;
+        }
+
+        function displayCharts(uricAcidValues, meals) {
+            // Uric Acid Chart
+            const uricAcidCtx = document.getElementById('uricAcidChart').getContext('2d');
+            if (uricAcidChart) {
+                uricAcidChart.destroy();
+            }
+
+            const sortedValues = [...uricAcidValues].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+            
+            uricAcidChart = new Chart(uricAcidCtx, {
+                type: 'line',
+                data: {
+                    labels: sortedValues.map(v => new Date(v.timestamp).toLocaleDateString('de-DE')),
+                    datasets: [{
+                        label: 'Harnsäurewert (mg/dL)',
+                        data: sortedValues.map(v => v.value),
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            title: {
+                                display: true,
+                                text: 'mg/dL'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Purin Chart
+            const purinCtx = document.getElementById('purinChart').getContext('2d');
+            if (purinChart) {
+                purinChart.destroy();
+            }
+
+            // Group meals by date
+            const mealsByDate = {};
+            meals.forEach(meal => {
+                const date = new Date(meal.timestamp).toLocaleDateString('de-DE');
+                if (!mealsByDate[date]) {
+                    mealsByDate[date] = 0;
+                }
+                mealsByDate[date] += meal.totalPurin;
+            });
+
+            const sortedDates = Object.keys(mealsByDate).sort((a, b) => new Date(a.split('.').reverse().join('-')) - new Date(b.split('.').reverse().join('-')));
+            
+            purinChart = new Chart(purinCtx, {
+                type: 'bar',
+                data: {
+                    labels: sortedDates,
+                    datasets: [{
+                        label: 'Purin-Aufnahme (mg)',
+                        data: sortedDates.map(date => mealsByDate[date]),
+                        backgroundColor: '#764ba2',
+                        borderColor: '#667eea',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'mg'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function displayTables(uricAcidValues, meals) {
+            // Uric Acid Table
+            const uricAcidTable = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Datum/Zeit</th>
+                            <th>Wert (mg/dL)</th>
+                            <th>Normal</th>
+                            <th>Faktoren</th>
+                            <th>Notizen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${uricAcidValues.slice(0, 50).map(value => {
+                            const factors = [];
+                            if (value.normal) factors.push('Normal');
+                            if (value.muchMeat) factors.push('Viel Fleisch');
+                            if (value.muchSport) factors.push('Viel Sport');
+                            if (value.muchSugar) factors.push('Viel Zucker');
+                            if (value.muchAlcohol) factors.push('Viel Alkohol');
+                            if (value.fasten) factors.push('Fasten');
+                            if (value.goutAttack) factors.push('Gichtanfall');
+                            
+                            return `
+                                <tr>
+                                    <td>${new Date(value.timestamp).toLocaleString('de-DE')}</td>
+                                    <td><strong>${value.value.toFixed(2)}</strong></td>
+                                    <td>${value.normal ? '<span class="badge badge-yes">Ja</span>' : '<span class="badge badge-no">Nein</span>'}</td>
+                                    <td>${factors.join(', ') || '-'}</td>
+                                    <td>${value.notes || '-'}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+                ${uricAcidValues.length > 50 ? `<p style="margin-top: 10px; color: #666;">Zeige 50 von ${uricAcidValues.length} Einträgen</p>` : ''}
+            `;
+            document.getElementById('uricAcidTableContainer').innerHTML = uricAcidTable;
+
+            // Meals Table
+            const mealsTable = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Datum/Zeit</th>
+                            <th>Typ</th>
+                            <th>Name</th>
+                            <th>Purin (mg)</th>
+                            <th>Kalorien</th>
+                            <th>Protein (g)</th>
+                            <th>Komponenten</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${meals.slice(0, 50).map(meal => {
+                            const mealTypeMap = {
+                                'BREAKFAST': 'Frühstück',
+                                'LUNCH': 'Mittagessen',
+                                'DINNER': 'Abendessen',
+                                'SNACK': 'Snack'
+                            };
+                            
+                            const components = meal.components || [];
+                            const componentsText = components.length > 0
+                                ? components.map(c => `${c.foodItemName} (${c.estimatedWeight}g)`).join(', ')
+                                : '-';
+                            
+                            return `
+                                <tr>
+                                    <td>${new Date(meal.timestamp).toLocaleString('de-DE')}</td>
+                                    <td>${mealTypeMap[meal.mealType] || meal.mealType}</td>
+                                    <td>${meal.name || '-'}</td>
+                                    <td>${meal.totalPurin}</td>
+                                    <td>${meal.totalCalories}</td>
+                                    <td>${meal.totalProtein.toFixed(1)}</td>
+                                    <td style="max-width: 300px; font-size: 12px;">${componentsText}</td>
+                                </tr>
+                                ${components.length > 0 ? `
+                                <tr style="background: #f9f9f9;">
+                                    <td colspan="7" style="padding: 10px 12px;">
+                                        <div style="font-size: 12px; color: #666;">
+                                            <strong>Komponenten-Details:</strong>
+                                            <div style="margin-top: 5px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
+                                                ${components.map(c => `
+                                                    <div style="padding: 5px; background: white; border-radius: 3px; border-left: 3px solid #667eea;">
+                                                        <strong>${c.foodItemName}</strong><br>
+                                                        Gewicht: ${c.estimatedWeight}g | 
+                                                        Purin: ${c.purin}mg | 
+                                                        Kalorien: ${c.calories} | 
+                                                        Protein: ${c.protein.toFixed(1)}g
+                                                    </div>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                ` : ''}
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+                ${meals.length > 50 ? `<p style="margin-top: 10px; color: #666;">Zeige 50 von ${meals.length} Einträgen</p>` : ''}
+            `;
+            document.getElementById('mealsTableContainer').innerHTML = mealsTable;
+        }
+
+        // API-Key-Verwaltung
+        async function loadApiKeys() {
+            if (!currentUser || !currentUser.isAdmin) {
+                alert('Nur Administratoren können API-Keys verwalten.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/api-keys`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error || 'Fehler beim Laden der API-Keys');
+                }
+
+                const apiKeys = data.data;
+                displayApiKeys(apiKeys);
+            } catch (error) {
+                console.error('Error loading API keys:', error);
+                alert(`Fehler: ${error.message}`);
+            }
+        }
+
+        function displayApiKeys(apiKeys) {
+            const treeContainer = document.getElementById('treeContainer');
+            
+            let html = `
+                <div style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 30px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="color: #667eea; margin: 0;">API-Keys (${apiKeys.length})</h2>
+                        <button onclick="showCreateApiKeyForm()" style="padding: 10px 20px; background: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">+ Neuer API-Key</button>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f5f5f5; border-bottom: 2px solid #667eea;">
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Name</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Beschreibung</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Berechtigungen</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Erstellt</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Zuletzt verwendet</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Status</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            apiKeys.forEach((key, index) => {
+                const permissions = [];
+                if (key.permissions.canReadOwnUricAcid) permissions.push('Eigene Harnsäurewerte lesen');
+                if (key.permissions.canWriteOwnUricAcid) permissions.push('Eigene Harnsäurewerte schreiben');
+                if (key.permissions.canReadOwnMeals) permissions.push('Eigene Mahlzeiten lesen');
+                if (key.permissions.canWriteOwnMeals) permissions.push('Eigene Mahlzeiten schreiben');
+                if (key.permissions.canReadAllUricAcid) permissions.push('Alle Harnsäurewerte lesen');
+                if (key.permissions.canReadAllMeals) permissions.push('Alle Mahlzeiten lesen');
+
+                const statusBadge = key.isActive 
+                    ? '<span style="background: #4caf50; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Aktiv</span>'
+                    : '<span style="background: #f44336; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Inaktiv</span>';
+
+                html += `
+                    <tr style="border-bottom: 1px solid #e0e0e0; ${index % 2 === 0 ? 'background: #fafafa;' : ''}">
+                        <td style="padding: 12px; font-weight: 600;">${key.name}</td>
+                        <td style="padding: 12px;">${key.description || '<span style="color: #999;">-</span>'}</td>
+                        <td style="padding: 12px;">
+                            <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                                ${permissions.map(p => `<span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${p}</span>`).join('')}
+                            </div>
+                        </td>
+                        <td style="padding: 12px;">${new Date(key.createdAt).toLocaleString('de-DE')}</td>
+                        <td style="padding: 12px;">${key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleString('de-DE') : '<span style="color: #999;">Nie</span>'}</td>
+                        <td style="padding: 12px;">${statusBadge}</td>
+                        <td style="padding: 12px;">
+                            <button onclick="deleteApiKey('${key.id}', '${key.name}')" style="padding: 6px 12px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px;">Löschen</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            treeContainer.innerHTML = html;
+            treeContainer.style.display = 'block';
+        }
+
+        function showCreateApiKeyForm() {
+            const formHTML = `
+                <div id="apiKeyFormModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+                    <div style="background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                        <h2 style="color: #667eea; margin-bottom: 20px;">Neuen API-Key erstellen</h2>
+                        <form id="createApiKeyForm">
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Name *</label>
+                                <input type="text" name="name" required style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Beschreibung</label>
+                                <textarea name="description" rows="3" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;"></textarea>
+                            </div>
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 10px; font-weight: 600;">Berechtigungen</label>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" name="canReadOwnUricAcid" style="margin-right: 8px;">
+                                        <span>Eigene Harnsäurewerte lesen</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" name="canWriteOwnUricAcid" style="margin-right: 8px;">
+                                        <span>Eigene Harnsäurewerte schreiben</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" name="canReadOwnMeals" style="margin-right: 8px;">
+                                        <span>Eigene Mahlzeiten lesen</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" name="canWriteOwnMeals" style="margin-right: 8px;">
+                                        <span>Eigene Mahlzeiten schreiben</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" name="canReadAllUricAcid" style="margin-right: 8px;">
+                                        <span>Alle Harnsäurewerte lesen</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" name="canReadAllMeals" style="margin-right: 8px;">
+                                        <span>Alle Mahlzeiten lesen</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                <button type="button" onclick="closeApiKeyForm()" style="padding: 10px 20px; background: #ccc; color: #333; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Abbrechen</button>
+                                <button type="submit" style="padding: 10px 20px; background: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Erstellen</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', formHTML);
+            
+            document.getElementById('createApiKeyForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const data = {
+                    name: formData.get('name'),
+                    description: formData.get('description'),
+                    canReadOwnUricAcid: formData.get('canReadOwnUricAcid') === 'on',
+                    canWriteOwnUricAcid: formData.get('canWriteOwnUricAcid') === 'on',
+                    canReadOwnMeals: formData.get('canReadOwnMeals') === 'on',
+                    canWriteOwnMeals: formData.get('canWriteOwnMeals') === 'on',
+                    canReadAllUricAcid: formData.get('canReadAllUricAcid') === 'on',
+                    canReadAllMeals: formData.get('canReadAllMeals') === 'on'
+                };
+
+                try {
+                    const response = await fetch(`${API_BASE}/admin/api-keys`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                        credentials: 'include'
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        closeApiKeyForm();
+                        showApiKeyModal(result.data.key, result.data.name);
+                        loadApiKeys();
+                    } else {
+                        alert(`Fehler: ${result.error}`);
+                    }
+                } catch (error) {
+                    console.error('Error creating API key:', error);
+                    alert(`Fehler: ${error.message}`);
+                }
+            });
+        }
+
+        function closeApiKeyForm() {
+            const modal = document.getElementById('apiKeyFormModal');
+            if (modal) modal.remove();
+        }
+
+        function showApiKeyModal(apiKey, keyName) {
+            const modalHTML = `
+                <div id="apiKeyDisplayModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1001;">
+                    <div style="background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%;">
+                        <h2 style="color: #667eea; margin-bottom: 15px;">✅ API-Key erstellt: ${keyName}</h2>
+                        <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                            <strong style="color: #856404;">⚠️ WICHTIG:</strong>
+                            <p style="margin: 10px 0 0 0; color: #856404;">Speichere diesen Key jetzt! Er wird nicht erneut angezeigt.</p>
+                        </div>
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #555;">API-Key:</label>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="apiKeyDisplay" value="${apiKey}" readonly style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: monospace; background: #f5f5f5; cursor: text;" onclick="this.select();">
+                                <button onclick="copyApiKey()" style="padding: 12px 20px; background: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap;">📋 Kopieren</button>
+                            </div>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end;">
+                            <button onclick="closeApiKeyModal()" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Schließen</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            // Auto-select beim Öffnen
+            document.getElementById('apiKeyDisplay').select();
+        }
+
+        function copyApiKey() {
+            const input = document.getElementById('apiKeyDisplay');
+            input.select();
+            input.setSelectionRange(0, 99999); // Für mobile Geräte
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    const btn = document.querySelector('#apiKeyDisplayModal button[onclick="copyApiKey()"]');
+                    if (btn) {
+                        const originalText = btn.textContent;
+                        btn.textContent = '✅ Kopiert!';
+                        btn.style.background = '#4caf50';
+                        setTimeout(() => {
+                            btn.textContent = originalText;
+                            btn.style.background = '#4caf50';
+                        }, 2000);
+                    }
+                } else {
+                    throw new Error('Copy command failed');
+                }
+            } catch (err) {
+                // Fallback: Verwende moderne Clipboard API
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(input.value).then(() => {
+                        const btn = document.querySelector('#apiKeyDisplayModal button[onclick="copyApiKey()"]');
+                        if (btn) {
+                            const originalText = btn.textContent;
+                            btn.textContent = '✅ Kopiert!';
+                            btn.style.background = '#4caf50';
+                            setTimeout(() => {
+                                btn.textContent = originalText;
+                                btn.style.background = '#4caf50';
+                            }, 2000);
+                        }
+                    }).catch(() => {
+                        // Fallback: Zeige den Key nochmal
+                        alert('Bitte kopiere den Key manuell:\n\n' + input.value);
+                    });
+                } else {
+                    // Fallback: Zeige den Key nochmal
+                    alert('Bitte kopiere den Key manuell:\n\n' + input.value);
+                }
+            }
+        }
+
+        function closeApiKeyModal() {
+            const modal = document.getElementById('apiKeyDisplayModal');
+            if (modal) modal.remove();
+        }
+
+        async function deleteApiKey(id, name) {
+            if (!confirm(`Möchtest du den API-Key "${name}" wirklich löschen?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/admin/api-keys/${id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('API-Key gelöscht');
+                    loadApiKeys();
+                } else {
+                    alert(`Fehler: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error deleting API key:', error);
+                alert(`Fehler: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
+

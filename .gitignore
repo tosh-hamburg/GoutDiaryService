@@ -1,0 +1,11 @@
+node_modules/
+.env
+data/*.db
+data/*.db-journal
+*.log
+.DS_Store
+.vscode/
+.idea/
+env-vars.yaml
+key.json
+key.json:1
