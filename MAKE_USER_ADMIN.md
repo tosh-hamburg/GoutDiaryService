@@ -109,3 +109,4 @@ UPDATE users SET is_admin = 1 WHERE email = 'dunker.thorsten@gmail.com';
 
 Die Datenbank-Datei befindet sich normalerweise in `/tmp` im Container (ephemeral) oder in einem Volume.
 
+

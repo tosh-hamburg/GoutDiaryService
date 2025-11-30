@@ -60,3 +60,4 @@ Die `env-vars.json` Datei enthält sensible Daten. Stelle sicher, dass sie:
 - ✅ Nicht in Git committed wird
 - ✅ Nach dem Deploy sicher aufbewahrt wird
 
+

@@ -147,3 +147,4 @@ gcloud run services update gichttagebuchservice \
   --update-secrets SESSION_SECRET=session-secret:latest
 ```
 
+

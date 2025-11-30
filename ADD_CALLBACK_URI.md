@@ -75,3 +75,4 @@ https://gichttagebuchservice-936354735458.europe-west3.run.app/auth/google/callb
 2. Versuche erneut, dich anzumelden
 3. Der Fehler sollte verschwinden
 
+

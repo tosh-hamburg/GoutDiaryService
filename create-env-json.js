@@ -71,3 +71,4 @@ Object.keys(gcloudEnvVars).forEach(key => {
 console.log('\n📝 Verwendung beim Deployen:');
 console.log(`gcloud run deploy gichttagebuchservice --source . --region europe-west1 --update-env-vars-from-file env-vars.json`);
 
+

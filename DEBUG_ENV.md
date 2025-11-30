@@ -107,3 +107,4 @@ cd /volume1/nodejs/UricAcidService
 node -e "require('dotenv').config(); console.log('CLIENT_ID:', process.env.GOOGLE_CLIENT_ID ? 'SET' : 'NOT SET');"
 ```
 
+
