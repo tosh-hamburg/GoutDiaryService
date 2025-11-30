@@ -25,7 +25,12 @@ exports.register = (req, res, next) => {
       lastBackupTimestamp: lastBackupTimestamp || null
     });
     
-    logger.info(`User registered/updated: ${guid}`, { gender, birthYear, lastBackupTimestamp });
+    logger.info(`User registered/updated: ${guid}`, { 
+      gender, 
+      birthYear, 
+      lastBackupTimestamp,
+      savedLastBackupTimestamp: user?.lastBackupTimestamp 
+    });
     
     res.json({
       success: true,
@@ -57,6 +62,8 @@ exports.getCurrentUser = (req, res, next) => {
         error: 'User not found'
       });
     }
+    
+    logger.debug(`getCurrentUser: Returning user ${userGuid} with lastBackupTimestamp: ${user.lastBackupTimestamp}`);
     
     res.json({
       success: true,
