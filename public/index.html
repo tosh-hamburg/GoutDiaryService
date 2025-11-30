@@ -365,6 +365,11 @@
                 <div class="stat-value" id="avgPurin">-</div>
                 <div class="stat-label">mg</div>
             </div>
+            <div class="stat-card">
+                <h3>Lebensmittel</h3>
+                <div class="stat-value" id="foodItemCount">-</div>
+                <div class="stat-label">Anzahl benutzerdefiniert</div>
+            </div>
         </div>
 
         <div id="chartsContainer" style="display: none;">
@@ -388,6 +393,11 @@
             <div class="data-table">
                 <h2>Mahlzeiten</h2>
                 <div id="mealsTableContainer"></div>
+            </div>
+
+            <div class="data-table">
+                <h2>Lebensmittel</h2>
+                <div id="foodItemsTableContainer"></div>
             </div>
         </div>
 
@@ -543,6 +553,12 @@
                         credentials: 'include'
                     });
                     const mealStatsData = await mealStatsResponse.json();
+                    
+                    // Load food items
+                    const foodItemsResponse = await fetch(`${API_BASE}/food-items?userId=${userGuid}`, {
+                        credentials: 'include'
+                    });
+                    const foodItemsData = await foodItemsResponse.json();
 
                     const genderMap = {
                         'MALE': 'Männlich',
@@ -585,6 +601,10 @@
                                     <div class="tree-stat">
                                         <div class="tree-stat-label">Ø Purin/Tag</div>
                                         <div class="tree-stat-value">${mealStatsData.data?.avgPurin || 0} mg</div>
+                                    </div>
+                                    <div class="tree-stat">
+                                        <div class="tree-stat-label">Lebensmittel</div>
+                                        <div class="tree-stat-value">${foodItemsData.data?.length || 0}</div>
                                     </div>
                                 </div>
                                 
@@ -630,6 +650,54 @@
                                     }).join('')}
                                     ${(mealsData.data || []).length > 10 ? `<div style="color: #666; font-size: 12px; margin-top: 5px;">... und ${(mealsData.data || []).length - 10} weitere</div>` : ''}
                                 </div>
+
+                                ${(foodItemsData.data || []).length > 0 ? `
+                                <div class="tree-subitem">
+                                    <div class="tree-subitem-header">Lebensmittel (${foodItemsData.data.length}):</div>
+                                    ${(foodItemsData.data || []).map(foodItem => {
+                                        const categoryNames = {
+                                            'FISH': 'Fisch',
+                                            'MEAT': 'Fleisch',
+                                            'POULTRY': 'Geflügel',
+                                            'SAUSAGE': 'Wurst',
+                                            'LEGUMES': 'Hülsenfrüchte',
+                                            'SOY': 'Soja',
+                                            'NUTS': 'Nüsse',
+                                            'MUSHROOMS': 'Pilze',
+                                            'FRUIT': 'Obst',
+                                            'VEGETABLES': 'Gemüse',
+                                            'DAIRY': 'Milchprodukte',
+                                            'GRAINS': 'Getreide',
+                                            'SWEETS': 'Süßwaren',
+                                            'BEVERAGES': 'Getränke',
+                                            'OFFAL': 'Innereien',
+                                            'BREAD': 'Brot',
+                                            'EGGS': 'Eier',
+                                            'FATS': 'Fette',
+                                            'CHEESE': 'Käse',
+                                            'OTHER': 'Sonstiges'
+                                        };
+                                        const categoryName = categoryNames[foodItem.category] || foodItem.category;
+                                        const thumbnail = foodItem.thumbnailPath || foodItem.imagePath;
+                                        const thumbnailUrl = thumbnail ? `/thumbnails/${thumbnail}` : null;
+                                        return `
+                                            <div style="margin: 5px 0; padding: 8px; background: white; border-radius: 3px; display: flex; align-items: center; gap: 10px;">
+                                                ${thumbnailUrl ? `<img src="${thumbnailUrl}" alt="${foodItem.name}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; background: #e0e0e0;" onerror="this.style.display='none'">` : ''}
+                                                <div style="flex: 1;">
+                                                    <strong>${foodItem.name}</strong>
+                                                    <span style="background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 8px;">${categoryName}</span>
+                                                    <div style="font-size: 11px; color: #666; margin-top: 3px;">
+                                                        Purin: ${foodItem.purinPer100g} mg/100g | 
+                                                        Harnsäure: ${foodItem.uricAcidPer100g} mg/100g | 
+                                                        Kalorien: ${foodItem.caloriesPer100g} kcal/100g | 
+                                                        Protein: ${foodItem.proteinPercentage.toFixed(1)}%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                                ` : ''}
                             </div>
                         </div>
                     `);
@@ -777,9 +845,9 @@
                 const mealStatsData = await mealStatsResponse.json();
 
                 if (uricAcidData.success && mealsData.success) {
-                    displayStats(statsData.data, mealStatsData.data);
+                    displayStats(statsData.data, mealStatsData.data, foodItemsData.data || []);
                     displayCharts(uricAcidData.data, mealsData.data);
-                    displayTables(uricAcidData.data, mealsData.data);
+                    displayTables(uricAcidData.data, mealsData.data, foodItemsData.data || []);
                     
                     statsContainer.style.display = 'grid';
                     chartsContainer.style.display = 'block';
@@ -818,13 +886,14 @@
             `;
         }
 
-        function displayStats(uricAcidStats, mealStats) {
+        function displayStats(uricAcidStats, mealStats, foodItems) {
             document.getElementById('uricAcidCount').textContent = uricAcidStats.count || 0;
             document.getElementById('avgUricAcid').textContent = uricAcidStats.average ? uricAcidStats.average.toFixed(2) : '-';
             document.getElementById('minUricAcid').textContent = uricAcidStats.min ? uricAcidStats.min.toFixed(2) : '-';
             document.getElementById('maxUricAcid').textContent = uricAcidStats.max ? uricAcidStats.max.toFixed(2) : '-';
             document.getElementById('mealCount').textContent = mealStats.mealCount || 0;
             document.getElementById('avgPurin').textContent = mealStats.avgPurin || 0;
+            document.getElementById('foodItemCount').textContent = foodItems.length || 0;
         }
 
         function displayCharts(uricAcidValues, meals) {
@@ -920,7 +989,7 @@
             });
         }
 
-        function displayTables(uricAcidValues, meals) {
+        function displayTables(uricAcidValues, meals, foodItems) {
             // Uric Acid Table
             const uricAcidTable = `
                 <table>
@@ -1025,6 +1094,67 @@
                 ${meals.length > 50 ? `<p style="margin-top: 10px; color: #666;">Zeige 50 von ${meals.length} Einträgen</p>` : ''}
             `;
             document.getElementById('mealsTableContainer').innerHTML = mealsTable;
+
+            // Food Items Table
+            const categoryNames = {
+                'FISH': 'Fisch und Krustentiere',
+                'MEAT': 'Fleisch',
+                'POULTRY': 'Geflügel',
+                'SAUSAGE': 'Wurstwaren',
+                'LEGUMES': 'Hülsenfrüchte',
+                'SOY': 'Sojaprodukte',
+                'NUTS': 'Nüsse',
+                'MUSHROOMS': 'Pilze',
+                'FRUIT': 'Obst',
+                'VEGETABLES': 'Gemüse',
+                'DAIRY': 'Milchprodukte',
+                'GRAINS': 'Getreide & Teigwaren',
+                'SWEETS': 'Süßwaren',
+                'BEVERAGES': 'Getränke',
+                'OFFAL': 'Innereien',
+                'BREAD': 'Brot',
+                'EGGS': 'Eierspeisen',
+                'FATS': 'Fette',
+                'CHEESE': 'Käse',
+                'OTHER': 'Sonstiges'
+            };
+
+            const foodItemsTable = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Kategorie</th>
+                            <th>Purin (mg/100g)</th>
+                            <th>Harnsäure (mg/100g)</th>
+                            <th>Kalorien (kcal/100g)</th>
+                            <th>Protein (%)</th>
+                            <th>Bild</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${foodItems.slice(0, 100).map(foodItem => {
+                            const categoryName = categoryNames[foodItem.category] || foodItem.category;
+                            const thumbnail = foodItem.thumbnailPath || foodItem.imagePath;
+                            const thumbnailUrl = thumbnail ? `/thumbnails/${thumbnail}` : null;
+                            return `
+                                <tr>
+                                    <td><strong>${foodItem.name}</strong></td>
+                                    <td>${categoryName}</td>
+                                    <td>${foodItem.purinPer100g}</td>
+                                    <td>${foodItem.uricAcidPer100g}</td>
+                                    <td>${foodItem.caloriesPer100g}</td>
+                                    <td>${foodItem.proteinPercentage.toFixed(1)}</td>
+                                    <td>${thumbnailUrl ? `<img src="${thumbnailUrl}" alt="${foodItem.name}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 4px; background: #e0e0e0;" onerror="this.style.display='none'">` : '-'}</td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+                ${foodItems.length > 100 ? `<p style="margin-top: 10px; color: #666;">Zeige 100 von ${foodItems.length} Lebensmitteln</p>` : ''}
+                ${foodItems.length === 0 ? '<p style="text-align: center; padding: 40px; color: #666;">Keine benutzerdefinierten Lebensmittel gefunden</p>' : ''}
+            `;
+            document.getElementById('foodItemsTableContainer').innerHTML = foodItemsTable;
         }
 
         // API-Key-Verwaltung
