@@ -66,6 +66,57 @@ class ApiKey {
   }
 
   /**
+   * Erstellt einen API-Key mit einem vorgegebenen Key-Wert (für manuelles Hinzufügen)
+   */
+  static createWithKey(data) {
+    const db = getDatabase();
+    const id = uuidv4();
+    
+    // Verwende den vorgegebenen Key
+    const plainKey = data.key.trim();
+    const keyHash = this.hashKey(plainKey);
+    
+    // Prüfe, ob dieser Key bereits existiert
+    const existing = this.findByKeyHash(keyHash);
+    if (existing) {
+      throw new Error('API-Key existiert bereits');
+    }
+    
+    const stmt = db.prepare(`
+      INSERT INTO api_keys (
+        id, key_hash, name, description,
+        can_read_own_uric_acid, can_write_own_uric_acid,
+        can_read_own_meals, can_write_own_meals,
+        can_read_all_uric_acid, can_read_all_meals,
+        created_by, is_active
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    stmt.run(
+      id,
+      keyHash,
+      data.name,
+      data.description || null,
+      data.canReadOwnUricAcid ? 1 : 0,
+      data.canWriteOwnUricAcid ? 1 : 0,
+      data.canReadOwnMeals ? 1 : 0,
+      data.canWriteOwnMeals ? 1 : 0,
+      data.canReadAllUricAcid ? 1 : 0,
+      data.canReadAllMeals ? 1 : 0,
+      data.createdBy || null,
+      data.isActive !== false ? 1 : 0
+    );
+    
+    // Gib den API-Key zurück
+    const apiKey = this.findById(id);
+    return {
+      ...apiKey,
+      key: plainKey // Nur beim Erstellen sichtbar!
+    };
+  }
+
+  /**
    * Findet einen API-Key anhand des gehashten Keys
    */
   static findByKeyHash(keyHash) {

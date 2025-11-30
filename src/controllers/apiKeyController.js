@@ -158,6 +158,93 @@ exports.getById = (req, res) => {
 };
 
 /**
+ * Erstellt einen API-Key mit einem vorgegebenen Key-Wert (manuelles Hinzufügen)
+ */
+exports.createWithKey = (req, res) => {
+  try {
+    const {
+      key,
+      name,
+      description,
+      canReadOwnUricAcid = false,
+      canWriteOwnUricAcid = false,
+      canReadOwnMeals = false,
+      canWriteOwnMeals = false,
+      canReadAllUricAcid = false,
+      canReadAllMeals = false
+    } = req.body;
+
+    if (!key || key.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: 'API-Key ist erforderlich'
+      });
+    }
+
+    if (!name || name.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: 'Name is required'
+      });
+    }
+
+    // Prüfe ob mindestens eine Berechtigung gesetzt ist
+    const hasPermission = canReadOwnUricAcid || canWriteOwnUricAcid ||
+                          canReadOwnMeals || canWriteOwnMeals ||
+                          canReadAllUricAcid || canReadAllMeals;
+
+    if (!hasPermission) {
+      return res.status(400).json({
+        success: false,
+        error: 'At least one permission must be granted'
+      });
+    }
+
+    const apiKey = ApiKey.createWithKey({
+      key: key.trim(),
+      name: name.trim(),
+      description: description ? description.trim() : null,
+      canReadOwnUricAcid,
+      canWriteOwnUricAcid,
+      canReadOwnMeals,
+      canWriteOwnMeals,
+      canReadAllUricAcid,
+      canReadAllMeals,
+      createdBy: req.user ? req.user.id : null,
+      isActive: true
+    });
+
+    logger.info(`API Key manually added: ${apiKey.name} (ID: ${apiKey.id})`);
+
+    res.status(201).json({
+      success: true,
+      data: {
+        id: apiKey.id,
+        name: apiKey.name,
+        description: apiKey.description,
+        key: apiKey.key, // Nur beim Erstellen!
+        permissions: {
+          canReadOwnUricAcid: apiKey.canReadOwnUricAcid,
+          canWriteOwnUricAcid: apiKey.canWriteOwnUricAcid,
+          canReadOwnMeals: apiKey.canReadOwnMeals,
+          canWriteOwnMeals: apiKey.canWriteOwnMeals,
+          canReadAllUricAcid: apiKey.canReadAllUricAcid,
+          canReadAllMeals: apiKey.canReadAllMeals
+        },
+        createdAt: apiKey.createdAt,
+        isActive: apiKey.isActive
+      }
+    });
+  } catch (error) {
+    logger.error('Error creating API key with provided key:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to create API key'
+    });
+  }
+};
+
+/**
  * Löscht einen API-Key (soft delete)
  */
 exports.delete = (req, res) => {

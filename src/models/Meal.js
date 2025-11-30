@@ -11,7 +11,8 @@ class Meal {
     const mealStmt = db.prepare(`
       INSERT OR REPLACE INTO meals (
         id, user_id, timestamp, meal_type, name,
-        total_purin, total_uric_acid, total_calories, total_protein, thumbnail_base64
+        total_purin, total_uric_acid, total_calories, total_protein, 
+        thumbnail_path
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
@@ -25,7 +26,7 @@ class Meal {
       data.totalUricAcid,
       data.totalCalories,
       data.totalProtein,
-      data.thumbnailBase64 || null
+      data.thumbnailPath || null
     );
     
     // Lösche alte Komponenten (für Backup: vollständige Synchronisation)
@@ -150,6 +151,21 @@ class Meal {
     return row?.lastTimestamp || null;
   }
   
+  static deleteByUserId(userId) {
+    const db = getDatabase();
+    // Lösche zuerst alle Komponenten der Mahlzeiten dieses Users
+    const mealIds = db.prepare('SELECT id FROM meals WHERE user_id = ?').all(userId);
+    if (mealIds.length > 0) {
+      const mealIdPlaceholders = mealIds.map(() => '?').join(',');
+      const deleteComponentsStmt = db.prepare(`DELETE FROM meal_components WHERE meal_id IN (${mealIdPlaceholders})`);
+      deleteComponentsStmt.run(...mealIds.map(m => m.id));
+    }
+    // Dann lösche die Mahlzeiten selbst
+    const deleteMealsStmt = db.prepare('DELETE FROM meals WHERE user_id = ?');
+    const result = deleteMealsStmt.run(userId);
+    return result.changes;
+  }
+  
   static mapRow(row) {
     return {
       id: row.id,
@@ -161,7 +177,7 @@ class Meal {
       totalUricAcid: row.total_uric_acid,
       totalCalories: row.total_calories,
       totalProtein: parseFloat(row.total_protein),
-      thumbnailBase64: row.thumbnail_base64 || null,
+      thumbnailPath: row.thumbnail_path || null,
       createdAt: row.created_at,
       components: [] // Will be populated by findById or findByUserId
     };

@@ -7,11 +7,13 @@ const backupController = require('../controllers/backupController');
 const analysisController = require('../controllers/analysisController');
 const userController = require('../controllers/userController');
 const apiKeyController = require('../controllers/apiKeyController');
+const thumbnailController = require('../controllers/thumbnailController');
 const { requireAdmin } = require('../middleware/auth');
 const { authenticateApiKey, authenticateApiKeyOrSession, requirePermission, requireUserAccess } = require('../middleware/apiKeyAuth');
 
 // API Key Management routes (nur für Admins)
 router.post('/admin/api-keys', requireAdmin, apiKeyController.create);
+router.post('/admin/api-keys/manual', requireAdmin, apiKeyController.createWithKey);
 router.get('/admin/api-keys', requireAdmin, apiKeyController.getAll);
 router.get('/admin/api-keys/:id', requireAdmin, apiKeyController.getById);
 router.delete('/admin/api-keys/:id', requireAdmin, apiKeyController.delete);
@@ -48,9 +50,20 @@ router.get('/analysis/latest', analysisController.getLatest);
 
 // User routes
 router.post('/users/register', authenticateApiKey, userController.register); // API-Key erforderlich, aber keine spezifische Berechtigung
+router.get('/users/me', authenticateApiKey, userController.getCurrentUser); // App kann eigene User-Daten abrufen
 router.get('/users', requireAdmin, userController.getAll); // Nur für Admins (Web-UI)
 router.get('/users/:guid', requireAdmin, userController.getByGuid); // Nur für Admins (Web-UI)
 router.put('/users/:guid', authenticateApiKey, userController.update); // API-Key erforderlich
+// Development-only: Löschen aller Backup-Daten eines Users
+if (process.env.NODE_ENV === 'development') {
+  router.delete('/users/:guid/backup-data', requireAdmin, userController.deleteAllUserData);
+}
+
+// Thumbnail routes (mit API-Key)
+router.post('/thumbnails/meals', authenticateApiKey, requirePermission('canWriteOwnMeals'), thumbnailController.uploadMealThumbnail);
+router.post('/thumbnails/food-items', authenticateApiKey, requirePermission('canWriteOwnMeals'), thumbnailController.uploadFoodItemThumbnail);
+router.get('/thumbnails/:userGuid/:thumbnailPath(*)', authenticateApiKeyOrSession, requirePermission('canReadOwnMeals'), thumbnailController.getThumbnail);
+router.delete('/thumbnails/:userGuid/:thumbnailPath(*)', authenticateApiKey, requirePermission('canWriteOwnMeals'), thumbnailController.deleteThumbnail);
 
 module.exports = router;
 

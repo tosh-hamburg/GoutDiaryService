@@ -10,12 +10,13 @@ class User {
       const existingUser = this.findByGuid(data.guid);
       if (existingUser) {
         // User existiert bereits, aktualisiere nur wenn neue Daten vorhanden sind
-        if (data.gender !== undefined || data.birthYear !== undefined || data.email !== undefined) {
+        if (data.gender !== undefined || data.birthYear !== undefined || data.email !== undefined || data.lastBackupTimestamp !== undefined) {
           const updateStmt = db.prepare(`
             UPDATE users SET
               gender = COALESCE(?, gender),
               birth_year = COALESCE(?, birth_year),
               email = COALESCE(?, email),
+              last_backup_timestamp = COALESCE(?, last_backup_timestamp),
               updated_at = CURRENT_TIMESTAMP
             WHERE guid = ?
           `);
@@ -23,6 +24,7 @@ class User {
             data.gender || null,
             data.birthYear || null,
             data.email || null,
+            data.lastBackupTimestamp || null,
             data.guid
           );
           return this.findByGuid(data.guid);
@@ -49,8 +51,8 @@ class User {
     }
     
     const stmt = db.prepare(`
-      INSERT INTO users (id, guid, gender, birth_year, email, google_id, is_admin)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (id, guid, gender, birth_year, last_backup_timestamp, email, google_id, is_admin)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     try {
@@ -59,6 +61,7 @@ class User {
         data.guid,
         data.gender || null,
         data.birthYear || null,
+        data.lastBackupTimestamp || null,
         data.email || null,
         data.googleId || null,
         isAdmin
@@ -126,15 +129,27 @@ class User {
   
   static update(guid, data) {
     const db = getDatabase();
+    const existingUser = this.findByGuid(guid);
+    if (!existingUser) {
+      return null;
+    }
+    
+    // Verwende vorhandene Werte, wenn nicht explizit übergeben
+    const gender = data.gender !== undefined ? data.gender : existingUser.gender;
+    const birthYear = data.birthYear !== undefined ? data.birthYear : existingUser.birthYear;
+    // lastBackupTimestamp kann explizit auf null gesetzt werden
+    const lastBackupTimestamp = data.lastBackupTimestamp !== undefined ? data.lastBackupTimestamp : existingUser.lastBackupTimestamp;
+    
     const stmt = db.prepare(`
       UPDATE users 
-      SET gender = ?, birth_year = ?, updated_at = CURRENT_TIMESTAMP
+      SET gender = ?, birth_year = ?, last_backup_timestamp = ?, updated_at = CURRENT_TIMESTAMP
       WHERE guid = ?
     `);
     
     stmt.run(
-      data.gender || null,
-      data.birthYear || null,
+      gender || null,
+      birthYear || null,
+      lastBackupTimestamp,
       guid
     );
     
@@ -163,6 +178,7 @@ class User {
       guid: row.guid,
       gender: row.gender,
       birthYear: row.birth_year,
+      lastBackupTimestamp: row.last_backup_timestamp || null,
       email: row.email,
       googleId: row.google_id,
       username: row.username,

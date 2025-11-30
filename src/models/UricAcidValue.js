@@ -105,6 +105,13 @@ class UricAcidValue {
     return row?.lastTimestamp || null;
   }
   
+  static deleteByUserId(userId) {
+    const db = getDatabase();
+    const stmt = db.prepare('DELETE FROM uric_acid_values WHERE user_id = ?');
+    const result = stmt.run(userId);
+    return result.changes;
+  }
+  
   static mapRow(row) {
     return {
       id: row.id,

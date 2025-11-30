@@ -7,23 +7,34 @@ let db = null;
 
 function initDatabase() {
   try {
+    logger.info('initDatabase() called');
     const dbPath = process.env.DB_PATH || './data/harnsaeure.db';
     const dbDir = path.dirname(dbPath);
     
+    logger.info(`Database path: ${dbPath}, directory: ${dbDir}`);
+    
     // Create data directory if it doesn't exist
     if (!fs.existsSync(dbDir)) {
+      logger.info(`Creating database directory: ${dbDir}`);
       fs.mkdirSync(dbDir, { recursive: true });
       logger.info(`Created database directory: ${dbDir}`);
     }
     
     // Open database connection
+    logger.info('Opening database connection...');
     db = new Database(dbPath);
+    logger.info('Database connection opened');
+    
+    logger.info('Setting WAL mode...');
     db.pragma('journal_mode = WAL'); // Enable WAL mode for better concurrency
+    logger.info('WAL mode enabled');
     
     logger.info(`Database initialized: ${dbPath}`);
     
     // Create tables
+    logger.info('Creating tables...');
     createTables();
+    logger.info('Tables created successfully');
     
     return db;
   } catch (error) {
@@ -42,6 +53,7 @@ function createTables() {
         guid TEXT UNIQUE NOT NULL,
         gender TEXT CHECK(gender IN ('MALE', 'FEMALE', 'DIVERSE')),
         birth_year INTEGER CHECK(birth_year >= 1900 AND birth_year <= 2100),
+        last_backup_timestamp DATETIME,
         email TEXT,
         google_id TEXT,
         username TEXT,
@@ -61,12 +73,13 @@ function createTables() {
       const hasIsAdmin = tableInfo.some(col => col.name === 'is_admin');
       const hasGender = tableInfo.some(col => col.name === 'gender');
       const hasBirthYear = tableInfo.some(col => col.name === 'birth_year');
+      const hasLastBackupTimestamp = tableInfo.some(col => col.name === 'last_backup_timestamp');
       const hasUsername = tableInfo.some(col => col.name === 'username');
       const hasPasswordHash = tableInfo.some(col => col.name === 'password_hash');
       
       // Wenn neue Spalten fehlen, füge sie hinzu (ohne UNIQUE, da SQLite das nicht unterstützt)
-      if (hasGuid && (!hasEmail || !hasGoogleId || !hasIsAdmin || !hasUsername || !hasPasswordHash)) {
-        logger.info('Adding email, google_id, is_admin, username, and password_hash columns to users table');
+      if (hasGuid && (!hasEmail || !hasGoogleId || !hasIsAdmin || !hasUsername || !hasPasswordHash || !hasLastBackupTimestamp)) {
+        logger.info('Adding missing columns to users table');
         try {
           if (!hasEmail) {
             db.exec('ALTER TABLE users ADD COLUMN email TEXT');
@@ -83,6 +96,9 @@ function createTables() {
           }
           if (!hasPasswordHash) {
             db.exec('ALTER TABLE users ADD COLUMN password_hash TEXT');
+          }
+          if (!hasLastBackupTimestamp) {
+            db.exec('ALTER TABLE users ADD COLUMN last_backup_timestamp DATETIME');
           }
           // Erstelle Indexe NACH dem Hinzufügen der Spalten
           // Warte kurz, damit die Spalten sicher hinzugefügt sind
@@ -225,22 +241,23 @@ function createTables() {
         total_uric_acid INTEGER NOT NULL CHECK(total_uric_acid >= 0),
         total_calories INTEGER NOT NULL CHECK(total_calories >= 0),
         total_protein REAL NOT NULL CHECK(total_protein >= 0),
-        thumbnail_base64 TEXT,
+        thumbnail_path TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
     
-    // Migration: Füge thumbnail_base64 Spalte hinzu, falls sie nicht existiert
+    // Migration: Füge thumbnail_path Spalte hinzu, falls sie nicht existiert
     try {
       const tableInfo = db.prepare("PRAGMA table_info(meals)").all();
-      const hasThumbnailBase64 = tableInfo.some(col => col.name === 'thumbnail_base64');
-      if (!hasThumbnailBase64) {
-        logger.info('Adding thumbnail_base64 column to meals table');
-        db.exec('ALTER TABLE meals ADD COLUMN thumbnail_base64 TEXT');
+      const hasThumbnailPath = tableInfo.some(col => col.name === 'thumbnail_path');
+      
+      if (!hasThumbnailPath) {
+        logger.info('Adding thumbnail_path column to meals table');
+        db.exec('ALTER TABLE meals ADD COLUMN thumbnail_path TEXT');
       }
     } catch (migrationError) {
-      logger.warn('Error checking/adding thumbnail_base64 to meals table:', migrationError.message);
+      logger.warn('Error checking/adding thumbnail_path to meals table:', migrationError.message);
     }
     
     // Meal Components table
@@ -308,7 +325,7 @@ function createTables() {
         protein_percentage REAL NOT NULL CHECK(protein_percentage >= 0),
         category TEXT NOT NULL,
         image_path TEXT,
-        thumbnail_base64 TEXT,
+        thumbnail_path TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
@@ -316,16 +333,16 @@ function createTables() {
       )
     `);
     
-    // Migration: Füge thumbnail_base64 Spalte hinzu, falls sie nicht existiert
+    // Migration: Füge thumbnail_path Spalte hinzu, falls sie nicht existiert
     try {
       const tableInfo = db.prepare("PRAGMA table_info(food_items)").all();
-      const hasThumbnailBase64 = tableInfo.some(col => col.name === 'thumbnail_base64');
-      if (!hasThumbnailBase64) {
-        logger.info('Adding thumbnail_base64 column to food_items table');
-        db.exec('ALTER TABLE food_items ADD COLUMN thumbnail_base64 TEXT');
+      const hasThumbnailPath = tableInfo.some(col => col.name === 'thumbnail_path');
+      if (!hasThumbnailPath) {
+        logger.info('Adding thumbnail_path column to food_items table');
+        db.exec('ALTER TABLE food_items ADD COLUMN thumbnail_path TEXT');
       }
     } catch (migrationError) {
-      logger.warn('Error checking/adding thumbnail_base64 to food_items table:', migrationError.message);
+      logger.warn('Error checking/adding thumbnail_path to food_items table:', migrationError.message);
     }
     
     // Create indexes

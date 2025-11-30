@@ -9,7 +9,7 @@ class FoodItem {
     const stmt = db.prepare(`
       INSERT INTO food_items (
         id, user_id, name, purin_per_100g, uric_acid_per_100g,
-        calories_per_100g, protein_percentage, category, image_path, thumbnail_base64
+        calories_per_100g, protein_percentage, category, image_path, thumbnail_path
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id, name) DO UPDATE SET
         purin_per_100g = excluded.purin_per_100g,
@@ -18,7 +18,7 @@ class FoodItem {
         protein_percentage = excluded.protein_percentage,
         category = excluded.category,
         image_path = excluded.image_path,
-        thumbnail_base64 = excluded.thumbnail_base64,
+        thumbnail_path = excluded.thumbnail_path,
         updated_at = CURRENT_TIMESTAMP
     `);
     
@@ -33,7 +33,7 @@ class FoodItem {
         data.proteinPercentage,
         data.category,
         data.imagePath || null,
-        data.thumbnailBase64 || null
+        data.thumbnailPath || null
       );
     } catch (error) {
       // Wenn INSERT fehlschlägt, versuche den Eintrag über user_id und name zu finden
@@ -92,7 +92,7 @@ class FoodItem {
         protein_percentage = ?,
         category = ?,
         image_path = ?,
-        thumbnail_base64 = ?,
+        thumbnail_path = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ?
     `);
@@ -105,7 +105,7 @@ class FoodItem {
       data.proteinPercentage,
       data.category,
       data.imagePath || null,
-      data.thumbnailBase64 || null,
+      data.thumbnailPath || null,
       id
     );
     
@@ -137,7 +137,7 @@ class FoodItem {
       proteinPercentage: row.protein_percentage,
       category: row.category,
       imagePath: row.image_path,
-      thumbnailBase64: row.thumbnail_base64 || null,
+      thumbnailPath: row.thumbnail_path || null,
       createdAt: row.created_at,
       updatedAt: row.updated_at
     };

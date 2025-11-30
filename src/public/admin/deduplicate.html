@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dubletten-Bereinigung - Gicht Tagebuch Service</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        select, button {
+            padding: 12px 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        select {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #1565c0;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        button.danger {
+            background: #d32f2f;
+        }
+        
+        button.danger:hover {
+            background: #c62828;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #90caf9;
+        }
+        
+        .status.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #81c784;
+        }
+        
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef5350;
+        }
+        
+        .status.warning {
+            background: #fff3e0;
+            color: #e65100;
+            border: 1px solid #ffb74d;
+        }
+        
+        .results {
+            margin-top: 30px;
+        }
+        
+        .result-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 4px;
+        }
+        
+        .result-section h3 {
+            color: #1976d2;
+            margin-bottom: 15px;
+        }
+        
+        .stat {
+            display: inline-block;
+            margin-right: 20px;
+            padding: 10px 15px;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #1976d2;
+        }
+        
+        .duplicate-groups {
+            margin-top: 15px;
+        }
+        
+        .duplicate-group {
+            background: white;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .duplicate-group-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+        
+        .duplicate-group-details {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1976d2;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Dubletten-Bereinigung</h1>
+        <p class="subtitle">Identifiziert und entfernt doppelte Einträge in der Datenbank</p>
+        
+        <div class="status" id="status"></div>
+        
+        <div class="controls">
+            <select id="tableSelect">
+                <option value="all">Alle Tabellen</option>
+                <option value="uric_acid_values">Harnsäurewerte</option>
+                <option value="meals">Mahlzeiten</option>
+                <option value="food_items">Lebensmittel</option>
+            </select>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="dryRunCheckbox" checked>
+                <label for="dryRunCheckbox">Nur analysieren (keine Daten löschen)</label>
+            </div>
+            
+            <button id="analyzeBtn" onclick="analyzeDuplicates()">Analysieren</button>
+            <button id="cleanBtn" class="danger" onclick="cleanDuplicates()" disabled>Bereinigen</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Wird verarbeitet...</p>
+        </div>
+        
+        <div class="results" id="results"></div>
+    </div>
+    
+    <script>
+        let lastAnalysis = null;
+        
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+            status.style.display = 'block';
+        }
+        
+        function hideStatus() {
+            document.getElementById('status').style.display = 'none';
+        }
+        
+        function setLoading(loading) {
+            document.getElementById('loading').style.display = loading ? 'block' : 'none';
+            document.getElementById('analyzeBtn').disabled = loading;
+            document.getElementById('cleanBtn').disabled = loading;
+        }
+        
+        async function analyzeDuplicates() {
+            const table = document.getElementById('tableSelect').value;
+            const dryRun = document.getElementById('dryRunCheckbox').checked;
+            
+            setLoading(true);
+            hideStatus();
+            
+            try {
+                const response = await fetch('/api/v1/admin/deduplicate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        table: table,
+                        dryRun: true // Immer true für Analyse
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Fehler beim Analysieren: ' + response.statusText);
+                }
+                
+                const data = await response.json();
+                lastAnalysis = data;
+                
+                displayResults(data);
+                
+                // Aktiviere Bereinigungs-Button, wenn Dubletten gefunden wurden
+                const hasDuplicates = Object.values(data.results).some(r => r.totalDuplicates > 0);
+                document.getElementById('cleanBtn').disabled = !hasDuplicates || dryRun;
+                
+                if (hasDuplicates) {
+                    showStatus(`Gefunden: ${Object.values(data.results).reduce((sum, r) => sum + r.totalDuplicates, 0)} Dubletten`, 'warning');
+                } else {
+                    showStatus('Keine Dubletten gefunden', 'success');
+                }
+            } catch (error) {
+                showStatus('Fehler: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        async function cleanDuplicates() {
+            if (!lastAnalysis) {
+                showStatus('Bitte zuerst analysieren', 'warning');
+                return;
+            }
+            
+            if (!confirm('Möchten Sie wirklich alle gefundenen Dubletten löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+                return;
+            }
+            
+            const table = document.getElementById('tableSelect').value;
+            
+            setLoading(true);
+            hideStatus();
+            
+            try {
+                const response = await fetch('/api/v1/admin/deduplicate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        table: table,
+                        dryRun: false
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Fehler beim Bereinigen: ' + response.statusText);
+                }
+                
+                const data = await response.json();
+                displayResults(data);
+                
+                const deletedCount = Object.values(data.results).reduce((sum, r) => sum + r.deletedCount, 0);
+                const deletedImages = data.totalDeletedImages || 0;
+                let message = `Erfolgreich: ${deletedCount} Dubletten gelöscht`;
+                if (deletedImages > 0) {
+                    message += `, ${deletedImages} Bilder gelöscht`;
+                }
+                showStatus(message, 'success');
+                
+                // Deaktiviere Button nach erfolgreicher Bereinigung
+                document.getElementById('cleanBtn').disabled = true;
+                lastAnalysis = null;
+            } catch (error) {
+                showStatus('Fehler: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '';
+            
+            for (const [tableName, result] of Object.entries(data.results)) {
+                if (result.duplicateGroups === 0) {
+                    continue;
+                }
+                
+                const section = document.createElement('div');
+                section.className = 'result-section';
+                
+                const tableDisplayName = {
+                    'uricAcidValues': 'Harnsäurewerte',
+                    'meals': 'Mahlzeiten',
+                    'foodItems': 'Lebensmittel'
+                }[tableName] || tableName;
+                
+                section.innerHTML = `
+                    <h3>${tableDisplayName}</h3>
+                    <div class="stat">
+                        <span class="stat-label">Dubletten-Gruppen</span>
+                        <span class="stat-value">${result.duplicateGroups}</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-label">Gesamte Dubletten</span>
+                        <span class="stat-value">${result.totalDuplicates}</span>
+                    </div>
+                    ${data.dryRun ? '' : `
+                    <div class="stat">
+                        <span class="stat-label">Gelöscht</span>
+                        <span class="stat-value">${result.deletedCount}</span>
+                    </div>
+                    ${result.deletedImages !== undefined ? `
+                    <div class="stat">
+                        <span class="stat-label">Gelöschte Bilder</span>
+                        <span class="stat-value">${result.deletedImages}</span>
+                    </div>
+                    ` : ''}
+                    `}
+                    <div class="duplicate-groups">
+                        ${result.groups.slice(0, 10).map(group => `
+                            <div class="duplicate-group">
+                                <div class="duplicate-group-header">
+                                    ${getGroupHeader(tableName, group)}
+                                </div>
+                                <div class="duplicate-group-details">
+                                    Behalten: ID ${group.keptId} | 
+                                    Gelöscht: ${group.deletedIds.length} Einträge (IDs: ${group.deletedIds.slice(0, 5).join(', ')}${group.deletedIds.length > 5 ? '...' : ''})
+                                    ${group.imagesToDelete !== undefined && group.imagesToDelete > 0 ? ` | ${group.imagesToDelete} Bilder gelöscht` : ''}
+                                </div>
+                            </div>
+                        `).join('')}
+                        ${result.groups.length > 10 ? `<p style="margin-top: 10px; color: #666;">... und ${result.groups.length - 10} weitere Gruppen</p>` : ''}
+                    </div>
+                `;
+                
+                resultsDiv.appendChild(section);
+            }
+            
+            if (resultsDiv.innerHTML === '') {
+                resultsDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">Keine Dubletten gefunden</p>';
+            }
+        }
+        
+        function getGroupHeader(tableName, group) {
+            if (tableName === 'uricAcidValues') {
+                return `User: ${group.userId} | Zeit: ${group.timestamp} | Wert: ${group.value}`;
+            } else if (tableName === 'meals') {
+                return `User: ${group.userId} | Zeit: ${group.timestamp} | Typ: ${group.mealType}`;
+            } else if (tableName === 'foodItems') {
+                return `User: ${group.userId} | Name: ${group.name}`;
+            }
+            return JSON.stringify(group);
+        }
+        
+        // Initial-Analyse beim Laden der Seite
+        window.addEventListener('load', () => {
+            analyzeDuplicates();
+        });
+    </script>
+</body>
+</html>
+

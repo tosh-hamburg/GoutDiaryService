@@ -7,10 +7,28 @@ const logger = require('../utils/logger');
  */
 exports.authenticateApiKey = (req, res, next) => {
   try {
+    // Logge Request-Details für Thumbnail-Uploads
+    if (req.path.includes('/thumbnails/')) {
+      logger.info('Thumbnail request received', {
+        method: req.method,
+        path: req.path,
+        contentType: req.get('Content-Type'),
+        contentLength: req.get('Content-Length'),
+        hasBody: !!req.body,
+        bodyKeys: req.body ? Object.keys(req.body) : []
+      });
+    }
+    
     // API-Key aus Header extrahieren
     const apiKey = req.headers['x-api-key'] || req.headers['X-API-Key'];
     
     if (!apiKey) {
+      if (req.path.includes('/thumbnails/')) {
+        logger.warn('Thumbnail request rejected: No API key', {
+          method: req.method,
+          path: req.path
+        });
+      }
       return res.status(401).json({
         success: false,
         error: 'API key required. Please provide X-API-Key header.'

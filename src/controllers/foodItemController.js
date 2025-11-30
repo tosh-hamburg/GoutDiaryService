@@ -47,8 +47,19 @@ exports.create = (req, res, next) => {
       proteinPercentage: parseFloat(req.body.proteinPercentage) || 0,
       category: req.body.category,
       imagePath: req.body.imagePath || null, // Fallback für alte Clients
-      thumbnailBase64: req.body.thumbnailBase64 || null // Base64-kodiertes Thumbnail (optional, hat Priorität)
+      thumbnailPath: req.body.thumbnailPath || null // Relativer Pfad zum Thumbnail (optional)
     };
+    
+    logger.info('Creating food item', {
+      userGuid,
+      userId,
+      foodItemId: data.id,
+      name: data.name,
+      hasImagePath: !!data.imagePath,
+      imagePath: data.imagePath,
+      hasThumbnailPath: !!data.thumbnailPath,
+      thumbnailPath: data.thumbnailPath
+    });
     
     // Validation
     if (!data.name || data.name.trim() === '') {
@@ -161,7 +172,7 @@ exports.update = (req, res, next) => {
       proteinPercentage: parseFloat(req.body.proteinPercentage) || 0,
       category: req.body.category,
       imagePath: req.body.imagePath || null, // Fallback für alte Clients
-      thumbnailBase64: req.body.thumbnailBase64 || null // Base64-kodiertes Thumbnail (optional, hat Priorität)
+      thumbnailPath: req.body.thumbnailPath || null // Relativer Pfad zum Thumbnail (optional)
     };
     
     // Validation

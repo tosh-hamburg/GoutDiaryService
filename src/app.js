@@ -6,6 +6,7 @@ const passport = require('passport');
 const { initDatabase } = require('./database');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
 const logger = require('./utils/logger');
 const path = require('path');
 const fs = require('fs');
@@ -47,6 +48,9 @@ app.use(cors({
   credentials: true
 }));
 
+// Body-Parsing Middleware
+// Express.json() und express.urlencoded() sollten multipart/form-data automatisch ignorieren
+// Multer wird in den Routes als Middleware verwendet und verarbeitet multipart/form-data
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -73,7 +77,19 @@ app.use(passport.session());
 
 // Request Logging
 app.use((req, res, next) => {
-  logger.info(`${req.method} ${req.path}`);
+  // Detailliertes Logging für Thumbnail-Uploads
+  if (req.path.includes('/thumbnails/')) {
+    logger.info('Thumbnail request', {
+      method: req.method,
+      path: req.path,
+      contentType: req.get('Content-Type'),
+      contentLength: req.get('Content-Length'),
+      hasBody: !!req.body,
+      bodyType: typeof req.body
+    });
+  } else {
+    logger.info(`${req.method} ${req.path}`);
+  }
   next();
 });
 
@@ -92,6 +108,9 @@ app.use('/auth', authRoutes);
 
 // API Routes
 app.use('/api/v1', apiRoutes);
+
+// Admin Routes
+app.use('/api/v1/admin', adminRoutes);
 
 // Root Route - Serve Web UI or API Info (MUSS VOR statischen Dateien sein!)
 app.get('/', (req, res, next) => {
@@ -172,6 +191,16 @@ app.get('/login-dev.html', (req, res) => {
   }
 });
 
+// Admin: Dubletten-Bereinigung
+app.get('/admin/deduplicate', (req, res) => {
+  const deduplicatePath = path.join(__dirname, '../public/admin/deduplicate.html');
+  if (fs.existsSync(deduplicatePath)) {
+    res.sendFile(deduplicatePath);
+  } else {
+    res.status(404).send('Deduplication page not found');
+  }
+});
+
 // Serve static files (web UI) - NACH allen Routen, damit Routen Vorrang haben
 // WICHTIG: index.html wird NICHT automatisch serviert, da Root-Route zuerst kommt
 const publicDir = path.join(__dirname, '../public');
@@ -246,16 +275,21 @@ app.use((req, res) => {
 // Initialize Database and Start Server
 async function start() {
   try {
+    logger.info('Starting server initialization...');
+    
     // Initialize SQLite database
-    await initDatabase();
-    logger.info('Database initialized');
+    logger.info('Initializing database...');
+    initDatabase(); // initDatabase ist synchron, kein await nötig
+    logger.info('Database initialized successfully');
     
     // Start server
+    logger.info(`Starting server on port ${PORT}...`);
     app.listen(PORT, () => {
       logger.info(`Server running on http://dev.gout-diary.com:${PORT}`);
       logger.info(`Health check: http://dev.gout-diary.com:${PORT}/health`);
       logger.info(`API: http://dev.gout-diary.com:${PORT}/api/v1`);
     });
+    logger.info('Server listen() called, waiting for connection...');
   } catch (error) {
     logger.error('Failed to start server:', error);
     process.exit(1);

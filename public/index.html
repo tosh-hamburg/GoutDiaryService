@@ -401,6 +401,10 @@
         let uricAcidChart = null;
         let purinChart = null;
         let currentUser = null;
+        // Prüfe ob wir in Development-Umgebung sind
+        const isDevelopment = window.location.hostname === 'dev.gout-diary.com' || 
+                              window.location.hostname.includes('127.0.0.1') || 
+                              window.location.hostname.includes('localhost');
 
         // Prüfe Anmeldung beim Laden der Seite
         async function checkAuth() {
@@ -443,6 +447,7 @@
                     </div>
                     <div style="display: flex; gap: 10px;">
                         ${currentUser.isAdmin ? '<button onclick="loadApiKeys()" style="padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">API-Keys verwalten</button>' : ''}
+                        ${currentUser.isAdmin ? '<a href="/admin/deduplicate" style="padding: 8px 16px; background: #ff9800; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-block;">Daten deduplizieren</a>' : ''}
                         <button onclick="logout()" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">Abmelden</button>
                     </div>
                 `;
@@ -643,6 +648,7 @@
                                     <th style="padding: 12px; text-align: left; font-weight: 600;">Registriert</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 600;">Geschlecht</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 600;">Geburtsjahr</th>
+                                    ${isDevelopment ? '<th style="padding: 12px; text-align: left; font-weight: 600;">Aktionen</th>' : ''}
                                 </tr>
                             </thead>
                             <tbody>
@@ -659,6 +665,16 @@
                         'DIVERSE': 'Divers'
                     };
                     
+                    const deleteButton = isDevelopment 
+                        ? `<td style="padding: 12px;">
+                            <button onclick="deleteUserBackupData('${user.guid}')" 
+                                    style="background: #f44336; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;"
+                                    title="Löscht alle Backup-Daten dieses Benutzers (nur Development)">
+                                🗑️ Backup-Daten löschen
+                            </button>
+                           </td>`
+                        : '';
+                    
                     usersTableHTML += `
                         <tr style="border-bottom: 1px solid #e0e0e0; ${index % 2 === 0 ? 'background: #fafafa;' : ''}">
                             <td style="padding: 12px;">${user.email || '<span style="color: #999;">-</span>'}</td>
@@ -667,6 +683,7 @@
                             <td style="padding: 12px;">${new Date(user.createdAt).toLocaleString('de-DE')}</td>
                             <td style="padding: 12px;">${user.gender ? genderMap[user.gender] || user.gender : '<span style="color: #999;">-</span>'}</td>
                             <td style="padding: 12px;">${user.birthYear || '<span style="color: #999;">-</span>'}</td>
+                            ${deleteButton}
                         </tr>
                     `;
                 });
@@ -1042,7 +1059,10 @@
                 <div style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 30px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                         <h2 style="color: #667eea; margin: 0;">API-Keys (${apiKeys.length})</h2>
-                        <button onclick="showCreateApiKeyForm()" style="padding: 10px 20px; background: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">+ Neuer API-Key</button>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="showCreateApiKeyForm()" style="padding: 10px 20px; background: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">+ Neuer API-Key</button>
+                            <button onclick="showAddApiKeyForm()" style="padding: 10px 20px; background: #2196f3; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">+ API-Key hinzufügen</button>
+                        </div>
                     </div>
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
@@ -1273,6 +1293,107 @@
             if (modal) modal.remove();
         }
 
+        function showAddApiKeyForm() {
+            const formHTML = `
+                <div id="addApiKeyFormModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+                    <div style="background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                        <h2 style="color: #667eea; margin-bottom: 20px;">API-Key manuell hinzufügen</h2>
+                        <form id="addApiKeyForm">
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">API-Key *</label>
+                                <input type="text" name="key" required placeholder="hst_..." style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: monospace;">
+                                <small style="color: #666; display: block; margin-top: 5px;">Geben Sie den bestehenden API-Key ein, den Sie hinzufügen möchten.</small>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Name *</label>
+                                <input type="text" name="name" required style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Beschreibung</label>
+                                <textarea name="description" rows="3" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;"></textarea>
+                            </div>
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 10px; font-weight: 600;">Berechtigungen</label>
+                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" name="canReadOwnUricAcid" style="margin-right: 8px;">
+                                        <span>Eigene Harnsäurewerte lesen</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" name="canWriteOwnUricAcid" style="margin-right: 8px;">
+                                        <span>Eigene Harnsäurewerte schreiben</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" name="canReadOwnMeals" style="margin-right: 8px;">
+                                        <span>Eigene Mahlzeiten lesen</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" name="canWriteOwnMeals" style="margin-right: 8px;">
+                                        <span>Eigene Mahlzeiten schreiben</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" name="canReadAllUricAcid" style="margin-right: 8px;">
+                                        <span>Alle Harnsäurewerte lesen</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="checkbox" name="canReadAllMeals" style="margin-right: 8px;">
+                                        <span>Alle Mahlzeiten lesen</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                <button type="button" onclick="closeAddApiKeyForm()" style="padding: 10px 20px; background: #ccc; color: #333; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Abbrechen</button>
+                                <button type="submit" style="padding: 10px 20px; background: #2196f3; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Hinzufügen</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', formHTML);
+            
+            document.getElementById('addApiKeyForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const data = {
+                    key: formData.get('key'),
+                    name: formData.get('name'),
+                    description: formData.get('description'),
+                    canReadOwnUricAcid: formData.get('canReadOwnUricAcid') === 'on',
+                    canWriteOwnUricAcid: formData.get('canWriteOwnUricAcid') === 'on',
+                    canReadOwnMeals: formData.get('canReadOwnMeals') === 'on',
+                    canWriteOwnMeals: formData.get('canWriteOwnMeals') === 'on',
+                    canReadAllUricAcid: formData.get('canReadAllUricAcid') === 'on',
+                    canReadAllMeals: formData.get('canReadAllMeals') === 'on'
+                };
+
+                try {
+                    const response = await fetch(`${API_BASE}/admin/api-keys/manual`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                        credentials: 'include'
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        closeAddApiKeyForm();
+                        alert(`API-Key "${result.data.name}" erfolgreich hinzugefügt!`);
+                        loadApiKeys();
+                    } else {
+                        alert(`Fehler: ${result.error}`);
+                    }
+                } catch (error) {
+                    console.error('Error adding API key:', error);
+                    alert(`Fehler: ${error.message}`);
+                }
+            });
+        }
+
+        function closeAddApiKeyForm() {
+            const modal = document.getElementById('addApiKeyFormModal');
+            if (modal) modal.remove();
+        }
+
         async function deleteApiKey(id, name) {
             if (!confirm(`Möchtest du den API-Key "${name}" wirklich löschen?`)) {
                 return;
@@ -1293,6 +1414,37 @@
                 }
             } catch (error) {
                 console.error('Error deleting API key:', error);
+                alert(`Fehler: ${error.message}`);
+            }
+        }
+        
+        // Löscht alle Backup-Daten eines Users (nur in Development)
+        async function deleteUserBackupData(userGuid) {
+            if (!isDevelopment) {
+                alert('Diese Funktion ist nur in Development-Umgebungen verfügbar');
+                return;
+            }
+            
+            if (!confirm(`Möchten Sie wirklich ALLE Backup-Daten des Benutzers ${userGuid} löschen?\n\nDies löscht:\n- Alle Harnsäurewerte\n- Alle Mahlzeiten\n- Alle benutzerdefinierten Lebensmittel\n- Alle Thumbnails\n\nDiese Aktion kann nicht rückgängig gemacht werden!`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/users/${userGuid}/backup-data`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert(`Backup-Daten erfolgreich gelöscht:\n- ${result.data.deletedUricAcid} Harnsäurewerte\n- ${result.data.deletedMeals} Mahlzeiten\n- ${result.data.deletedFoodItems} Lebensmittel\n- ${result.data.deletedThumbnails} Thumbnails`);
+                    // Lade User-Liste neu
+                    loadAllData();
+                } else {
+                    alert(`Fehler: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Error deleting user backup data:', error);
                 alert(`Fehler: ${error.message}`);
             }
         }

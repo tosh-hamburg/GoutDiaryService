@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/volume1/nodejs/UricAcidService/logs/.faca755f328ac1b0ae883f7affd0278434eb1e64-audit.json",
+    "files": [
+        {
+            "date": 1764515457443,
+            "name": "/volume1/nodejs/UricAcidService/logs/application-2025-11-30.log",
+            "hash": "beadc68e4078904a1115db059700966bf5a019f3a0576666d022dce22580f085"
+        }
+    ],
+    "hashType": "sha256"
+}

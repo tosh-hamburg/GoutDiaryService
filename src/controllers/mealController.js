@@ -32,8 +32,18 @@ exports.create = (req, res, next) => {
       totalCalories: parseInt(req.body.totalCalories) || 0,
       totalProtein: parseFloat(req.body.totalProtein) || 0,
       components: req.body.components || [], // Array of meal components
-      thumbnailBase64: req.body.thumbnailBase64 || null // Base64-kodiertes Thumbnail (optional)
+      thumbnailPath: req.body.thumbnailPath || null // Relativer Pfad zum Thumbnail (optional)
     };
+    
+    logger.info('Creating meal', {
+      userGuid,
+      userId,
+      mealId: data.id,
+      mealType: data.mealType,
+      hasThumbnail: !!data.thumbnailPath,
+      thumbnailPath: data.thumbnailPath,
+      componentCount: data.components?.length || 0
+    });
     
     // Validation
     if (!['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'].includes(data.mealType)) {
