@@ -27,3 +27,5 @@ Remove-Item $tempScript
 Write-Host "Fertig!"
 
 
+
+

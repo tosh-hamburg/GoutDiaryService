@@ -54,7 +54,9 @@ router.get('/users/me', authenticateApiKey, userController.getCurrentUser); // A
 router.get('/users', requireAdmin, userController.getAll); // Nur für Admins (Web-UI)
 router.get('/users/:guid', requireAdmin, userController.getByGuid); // Nur für Admins (Web-UI)
 router.put('/users/:guid', authenticateApiKey, userController.update); // API-Key erforderlich
-// Development-only: Löschen aller Backup-Daten eines Users
+// Löschen aller Backup-Daten eines Users (User kann eigene Daten löschen)
+router.delete('/users/delete-all', authenticateApiKey, requirePermission('canWriteOwnUricAcid'), userController.deleteAllUserData);
+// Development-only: Löschen aller Backup-Daten eines Users (Admin)
 if (process.env.NODE_ENV === 'development') {
   router.delete('/users/:guid/backup-data', requireAdmin, userController.deleteAllUserData);
 }

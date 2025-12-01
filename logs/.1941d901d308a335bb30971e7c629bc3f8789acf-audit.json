@@ -9,6 +9,11 @@
             "date": 1764515457450,
             "name": "/volume1/nodejs/UricAcidService/logs/rejections-2025-11-30.log",
             "hash": "cb367ba29f580f4a0f5c3ec90d89dd35de8c57fee448f7e1a55fc69f532fedfd"
+        },
+        {
+            "date": 1764575246516,
+            "name": "/volume1/nodejs/UricAcidService/logs/rejections-2025-12-01.log",
+            "hash": "64a47bc6cd77c7994cecdb5fb4284505d37cfa016662573884b561e02b6c3178"
         }
     ],
     "hashType": "sha256"

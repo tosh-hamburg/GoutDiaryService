@@ -153,20 +153,14 @@ exports.getAll = (req, res, next) => {
 };
 
 /**
- * Löscht alle Backup-Daten eines Users (nur in Development-Umgebung)
+ * Löscht alle Backup-Daten eines Users
  * Löscht: Harnsäurewerte, Mahlzeiten, FoodItems, Thumbnails
+ * Kann entweder über /users/:guid/backup-data (Admin) oder /users/delete-all (User selbst) aufgerufen werden
  */
 exports.deleteAllUserData = (req, res, next) => {
   try {
-    // Nur in Development-Umgebung erlauben
-    if (process.env.NODE_ENV === 'production') {
-      return res.status(403).json({
-        success: false,
-        error: 'This function is only available in development environment'
-      });
-    }
-    
-    const { guid } = req.params;
+    // GUID kann aus params (Admin-Route) oder aus Header (User-Route) kommen
+    const guid = req.params.guid || req.headers['x-user-guid'] || req.headers['X-User-Guid'];
     
     if (!guid) {
       return res.status(400).json({
