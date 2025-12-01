@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const logger = require('../utils/logger');
 const { v4: uuidv4 } = require('uuid');
+const { OAuth2Client } = require('google-auth-library');
 
 exports.loginSuccess = (req, res) => {
   try {
@@ -127,6 +128,105 @@ exports.getCurrentUser = (req, res) => {
       success: false,
       error: 'Server error'
     });
+  }
+};
+
+// New: Verify Google Identity credential (ID token) from client (GSI / One-tap)
+exports.verifyGoogleCredential = async (req, res) => {
+  try {
+    const credential = req.body?.credential || req.body?.id_token;
+    if (!credential) {
+      return res.status(400).json({ success: false, error: 'Missing credential in request body' });
+    }
+
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      logger.warn('GOOGLE_CLIENT_ID not configured - cannot verify Google credential');
+      return res.status(500).json({ success: false, error: 'Server misconfiguration' });
+    }
+
+    const client = new OAuth2Client(clientId);
+    let ticket;
+    try {
+      ticket = await client.verifyIdToken({ idToken: credential, audience: clientId });
+    } catch (err) {
+      logger.warn('Invalid Google ID token:', err);
+      return res.status(401).json({ success: false, error: 'Invalid Google credential' });
+    }
+
+    const payload = ticket.getPayload();
+    const googleId = payload.sub;
+    const email = payload.email;
+    const displayName = payload.name || payload.email;
+
+    if (!email) {
+      return res.status(400).json({ success: false, error: 'No email in Google credential' });
+    }
+
+    // Find user by Google ID
+    let user = User.findByGoogleId(googleId);
+
+    if (!user) {
+      // Try to find by email and link
+      user = User.findByEmail(email);
+      if (user) {
+        const db = require('../database').getDatabase();
+        const updateStmt = db.prepare('UPDATE users SET google_id = ? WHERE id = ?');
+        updateStmt.run(googleId, user.id);
+        user = User.findByGoogleId(googleId);
+      } else {
+        // Create new user
+        const isDevelopment = process.env.NODE_ENV === 'development';
+        let isAdmin;
+        if (isDevelopment) {
+          isAdmin = 1;
+        } else {
+          const db = require('../database').getDatabase();
+          const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+          isAdmin = userCount === 0 ? 1 : 0;
+        }
+
+        const guid = uuidv4();
+        const newUser = User.create({
+          guid: guid,
+          email: email,
+          googleId: googleId,
+          isAdmin: isAdmin === 1
+        });
+        user = newUser;
+        logger.info(`New user created via Google credential: ${email} (Admin: ${newUser.isAdmin})`);
+      }
+    }
+
+    // Log in the user via Passport session
+    req.logIn(user, (err) => {
+      if (err) {
+        logger.error('Error logging in user after Google credential:', err);
+        return res.status(500).json({ success: false, error: 'Login failed' });
+      }
+
+      // Ensure session saved before responding
+      req.session.save((err) => {
+        if (err) {
+          logger.error('Error saving session after Google credential login:', err);
+          return res.status(500).json({ success: false, error: 'Session save failed' });
+        }
+
+        logger.info(`User logged in via Google credential: ${user.email}`);
+        return res.json({
+          success: true,
+          data: {
+            id: user.id,
+            email: user.email,
+            isAdmin: user.isAdmin,
+            guid: user.guid
+          }
+        });
+      });
+    });
+  } catch (error) {
+    logger.error('Error in verifyGoogleCredential:', error);
+    res.status(500).json({ success: false, error: 'Server error' });
   }
 };
 

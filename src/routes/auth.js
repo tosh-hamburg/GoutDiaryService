@@ -21,7 +21,15 @@ if (isDevelopment) {
   logger.info('Development mode: Local username/password authentication enabled');
 }
 
-// Google OAuth routes
+// Google OAuth routes (classic OAuth) and Google Identity credential (GSI)
+const isGsiAvailable = !!process.env.GOOGLE_CLIENT_ID;
+
+// Route to accept Google Identity credential (ID token) from client (GSI / One-tap / mobile)
+if (isGsiAvailable) {
+  router.post('/google/credential', authController.verifyGoogleCredential);
+}
+
+// Classic Google OAuth routes
 if (isOAuthConfigured) {
   router.get('/google', (req, res, next) => {
     logger.info('OAuth login initiated');
