@@ -153,6 +153,43 @@ exports.getAll = (req, res, next) => {
 };
 
 /**
+ * Gibt alle User-GUIDs zurück (nur für Admin-API-Keys)
+ * Erfordert einen API-Key mit canReadAllUricAcid oder canReadAllMeals Berechtigung
+ */
+exports.getAllGuids = (req, res, next) => {
+  try {
+    // Prüfe ob API-Key Admin-Berechtigung hat
+    if (!req.apiKey) {
+      return res.status(401).json({
+        success: false,
+        error: 'API key authentication required'
+      });
+    }
+    
+    // Prüfe ob API-Key Admin-Berechtigung hat (canReadAllUricAcid oder canReadAllMeals)
+    const hasAdminPermission = req.apiKey.canReadAllUricAcid || req.apiKey.canReadAllMeals;
+    
+    if (!hasAdminPermission) {
+      logger.warn(`API key ${req.apiKey.name} (ID: ${req.apiKey.id}) attempted to access all user GUIDs without admin permission`);
+      return res.status(403).json({
+        success: false,
+        error: 'Admin API key required. This endpoint requires canReadAllUricAcid or canReadAllMeals permission.'
+      });
+    }
+    
+    const users = User.getAll();
+    const guids = users.map(user => user.guid);
+    
+    logger.info(`Admin API key ${req.apiKey.name} (ID: ${req.apiKey.id}) retrieved ${guids.length} user GUIDs`);
+    
+    res.json(guids);
+  } catch (error) {
+    logger.error('Error fetching all user GUIDs:', error);
+    next(error);
+  }
+};
+
+/**
  * Löscht alle Backup-Daten eines Users
  * Löscht: Harnsäurewerte, Mahlzeiten, FoodItems, Thumbnails
  * Kann entweder über /users/:guid/backup-data (Admin) oder /users/delete-all (User selbst) aufgerufen werden
@@ -226,28 +263,28 @@ exports.deleteAllUserData = (req, res, next) => {
       logger.warn(`Error deleting thumbnails for user ${guid}:`, thumbError);
     }
     
-    // Setze last_backup_timestamp zurück
-    User.update(guid, {
-      gender: user.gender,
-      birthYear: user.birthYear,
-      lastBackupTimestamp: null
-    });
+    // Lösche auch den Benutzer-Eintrag selbst
+    const db = require('../database').getDatabase();
+    const deleteUserStmt = db.prepare('DELETE FROM users WHERE guid = ?');
+    deleteUserStmt.run(guid);
     
-    logger.info(`Deleted all backup data for user ${guid}`, {
+    logger.info(`Deleted all backup data and user entry for user ${guid}`, {
       deletedUricAcid,
       deletedMeals,
       deletedFoodItems,
-      deletedThumbnails
+      deletedThumbnails,
+      userDeleted: true
     });
     
     res.json({
       success: true,
-      message: 'All user backup data deleted successfully',
+      message: 'User and all backup data deleted successfully',
       data: {
         deletedUricAcid,
         deletedMeals,
         deletedFoodItems,
-        deletedThumbnails
+        deletedThumbnails,
+        userDeleted: true
       }
     });
   } catch (error) {

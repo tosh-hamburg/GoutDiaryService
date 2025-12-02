@@ -53,24 +53,35 @@ class User {
     
     const id = uuidv4();
     
-    // Im Development-Modus: Alle User sind Super-Admins
-    const isDevelopment = process.env.NODE_ENV === 'development';
-    let isAdmin;
+    // Admin-Status: Nur Benutzer mit username/password können Admin sein
+    // GUID-Benutzer (nur für API-Zugriff) sind NIEMALS Admin
+    let isAdmin = 0; // Standard: Kein Admin
     
-    if (isDevelopment) {
-      isAdmin = 1; // Alle sind Admins im Development
-    } else if (data.isAdmin !== undefined) {
+    if (data.isAdmin !== undefined) {
       // Wenn isAdmin explizit übergeben wurde, verwende diesen Wert
-      isAdmin = data.isAdmin ? 1 : 0;
-    } else {
-      // Prüfe ob es der erste User ist (wird Super-Admin)
-      const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
-      isAdmin = userCount === 0 ? 1 : 0;
+      // ABER: Nur wenn username/password vorhanden sind
+      if (data.username && data.passwordHash) {
+        isAdmin = data.isAdmin ? 1 : 0;
+      } else {
+        // GUID-Benutzer können nicht Admin sein
+        isAdmin = 0;
+      }
+    } else if (data.username && data.passwordHash) {
+      // Benutzer mit username/password: Im Development-Modus Admin, sonst nur erster User
+      const isDevelopment = process.env.NODE_ENV === 'development';
+      if (isDevelopment) {
+        isAdmin = 1; // Im Development: Alle Web-Benutzer sind Admin
+      } else {
+        // Prüfe ob es der erste Web-Benutzer ist (wird Super-Admin)
+        const userCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE username IS NOT NULL').get().count;
+        isAdmin = userCount === 0 ? 1 : 0;
+      }
     }
+    // GUID-Benutzer ohne username/password: isAdmin bleibt 0
     
     const stmt = db.prepare(`
-      INSERT INTO users (id, guid, gender, birth_year, last_backup_timestamp, email, google_id, is_admin)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO users (id, guid, gender, birth_year, last_backup_timestamp, email, google_id, username, password_hash, is_admin)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
     try {
@@ -82,6 +93,8 @@ class User {
         data.lastBackupTimestamp || null,
         data.email || null,
         data.googleId || null,
+        data.username || null,
+        data.passwordHash || null,
         isAdmin
       );
       

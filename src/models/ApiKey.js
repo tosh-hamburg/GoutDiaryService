@@ -164,6 +164,42 @@ class ApiKey {
   }
 
   /**
+   * Aktualisiert einen API-Key
+   */
+  static update(id, data) {
+    const db = getDatabase();
+    const stmt = db.prepare(`
+      UPDATE api_keys 
+      SET 
+        name = ?,
+        description = ?,
+        can_read_own_uric_acid = ?,
+        can_write_own_uric_acid = ?,
+        can_read_own_meals = ?,
+        can_write_own_meals = ?,
+        can_read_all_uric_acid = ?,
+        can_read_all_meals = ?,
+        is_active = ?
+      WHERE id = ?
+    `);
+    
+    stmt.run(
+      data.name,
+      data.description || null,
+      data.canReadOwnUricAcid ? 1 : 0,
+      data.canWriteOwnUricAcid ? 1 : 0,
+      data.canReadOwnMeals ? 1 : 0,
+      data.canWriteOwnMeals ? 1 : 0,
+      data.canReadAllUricAcid ? 1 : 0,
+      data.canReadAllMeals ? 1 : 0,
+      data.isActive !== false ? 1 : 0,
+      id
+    );
+    
+    return this.findById(id);
+  }
+
+  /**
    * Löscht einen API-Key (soft delete)
    */
   static delete(id) {

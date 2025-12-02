@@ -50,22 +50,21 @@ if (!clientID || !clientSecret) {
           updateStmt.run(id, user.id);
           user = User.findByGoogleId(id);
         } else {
-          // Erstelle neuen User
-          // Im Development-Modus: Alle User sind Super-Admins
+          // Erstelle neuen User (Google OAuth = Web-Benutzer, kann Admin sein)
           const isDevelopment = process.env.NODE_ENV === 'development';
           let isAdmin;
           
           if (isDevelopment) {
-            isAdmin = 1; // Alle sind Admins im Development
+            isAdmin = 1; // Im Development: Alle Web-Benutzer sind Admin
           } else {
-            // Prüfe ob es der erste User ist (wird Super-Admin)
+            // Prüfe ob es der erste Web-Benutzer ist (wird Super-Admin)
             const db = require('../database').getDatabase();
-            const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
-            isAdmin = userCount === 0 ? 1 : 0;
+            const webUserCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE email IS NOT NULL OR username IS NOT NULL').get().count;
+            isAdmin = webUserCount === 0 ? 1 : 0;
           }
           
           const guid = uuidv4();
-          // Übergebe isAdmin direkt an User.create(), damit es beim INSERT gesetzt wird
+          // Google OAuth Benutzer haben email, können also Admin sein
           const newUser = User.create({
             guid: guid,
             email: email,
@@ -104,6 +103,12 @@ if (isDevelopment) {
         const user = User.findByUsername(username);
         if (!user) {
           logger.warn(`Local login failed: user not found: ${username}`);
+          return done(null, false, { message: 'Ungültiger Benutzername oder Passwort' });
+        }
+        
+        // Prüfe ob Benutzer überhaupt ein Passwort hat (GUID-Benutzer haben keins)
+        if (!user.passwordHash) {
+          logger.warn(`Local login failed: user ${username} has no password (GUID-only user)`);
           return done(null, false, { message: 'Ungültiger Benutzername oder Passwort' });
         }
         

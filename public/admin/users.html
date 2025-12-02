@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Benutzerverwaltung - Gicht Tagebuch Service</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .status {
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .status.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #90caf9;
+        }
+        
+        .status.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #81c784;
+        }
+        
+        .status.error {
+            background: #ffebee;
+            color: #c62828;
+            border: 1px solid #ef5350;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            background: #1976d2;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: #1565c0;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        button.danger {
+            background: #d32f2f;
+        }
+        
+        button.danger:hover {
+            background: #c62828;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #1976d2;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background: #f5f5f5;
+            font-weight: 600;
+            color: #333;
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:hover {
+            background: #f9f9f9;
+        }
+        
+        .guid {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .date {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .no-backup {
+            color: #999;
+            font-style: italic;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .actions button {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Benutzerverwaltung</h1>
+        <p class="subtitle">Verwaltung aller registrierten Benutzer</p>
+        
+        <div class="status" id="status"></div>
+        
+        <div class="controls">
+            <button onclick="loadUsers()">Aktualisieren</button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Wird geladen...</p>
+        </div>
+        
+        <div id="usersTable"></div>
+    </div>
+    
+    <script>
+        // Authentifizierungsprüfung
+        async function checkAuth() {
+            try {
+                const response = await fetch('/auth/me', {
+                    credentials: 'include'
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.data && data.data.isAdmin) {
+                        return true;
+                    }
+                }
+                // Nicht authentifiziert oder kein Admin
+                alert('Sie müssen als Administrator angemeldet sein, um diese Seite zu verwenden.');
+                window.location.href = '/login.html';
+                return false;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                alert('Fehler bei der Authentifizierungsprüfung.');
+                window.location.href = '/login.html';
+                return false;
+            }
+        }
+        
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = 'status ' + type;
+            status.style.display = 'block';
+        }
+        
+        function hideStatus() {
+            document.getElementById('status').style.display = 'none';
+        }
+        
+        function setLoading(loading) {
+            document.getElementById('loading').style.display = loading ? 'block' : 'none';
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return '<span class="no-backup">Kein Backup</span>';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleString('de-DE', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+        
+        function formatCreatedAt(dateString) {
+            if (!dateString) return '-';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleString('de-DE', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+        
+        async function loadUsers() {
+            setLoading(true);
+            hideStatus();
+            
+            try {
+                const response = await fetch('/api/v1/users', {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        alert('Sie müssen als Administrator angemeldet sein.');
+                        window.location.href = '/login.html';
+                        return;
+                    }
+                    throw new Error('Fehler beim Laden der Benutzer: ' + response.statusText);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    displayUsers(data.data);
+                    showStatus(`${data.data.length} Benutzer geladen`, 'success');
+                } else {
+                    throw new Error('Ungültige Antwort vom Server');
+                }
+            } catch (error) {
+                showStatus('Fehler: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        function displayUsers(users) {
+            const tableDiv = document.getElementById('usersTable');
+            
+            if (users.length === 0) {
+                tableDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">Keine Benutzer gefunden</p>';
+                return;
+            }
+            
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>GUID</th>
+                            <th>Registriert am</th>
+                            <th>Letztes Backup</th>
+                            <th>Geschlecht</th>
+                            <th>Geburtsjahr</th>
+                            <th>Ist Admin</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            users.forEach(user => {
+                const isAdmin = user.isAdmin ? 'Ja' : 'Nein';
+                const adminClass = user.isAdmin ? 'style="color: #4caf50; font-weight: bold;"' : 'style="color: #999;"';
+                html += `
+                    <tr>
+                        <td class="guid">${user.guid || '-'}</td>
+                        <td class="date">${formatCreatedAt(user.createdAt)}</td>
+                        <td class="date">${formatDate(user.lastBackupTimestamp)}</td>
+                        <td>${user.gender || '-'}</td>
+                        <td>${user.birthYear || '-'}</td>
+                        <td ${adminClass}>${isAdmin}</td>
+                        <td class="actions">
+                            <button class="danger" onclick="deleteUser('${user.guid}')">Backup-Daten löschen</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                    </tbody>
+                </table>
+            `;
+            
+            tableDiv.innerHTML = html;
+        }
+        
+        async function deleteUser(guid) {
+            if (!confirm(`Möchten Sie den Benutzer ${guid} mit ALLEN Daten wirklich löschen?\n\nDies löscht:\n- Alle Harnsäurewerte\n- Alle Mahlzeiten\n- Alle Lebensmittel\n- Den Benutzer-Eintrag selbst\n\nDiese Aktion kann nicht rückgängig gemacht werden!`)) {
+                return;
+            }
+            
+            setLoading(true);
+            hideStatus();
+            
+            try {
+                // Verwende die Admin-Route (verfügbar in Development und Production)
+                const endpoint = `/api/v1/users/${guid}/backup-data`;
+                
+                const response = await fetch(endpoint, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        alert('Sie müssen als Administrator angemeldet sein.');
+                        window.location.href = '/login.html';
+                        return;
+                    }
+                    let errorMessage = 'Fehler beim Löschen: ' + response.statusText;
+                    try {
+                        const errorData = await response.json();
+                        if (errorData.error) {
+                            errorMessage += ' - ' + errorData.error;
+                        }
+                    } catch (e) {
+                        // Ignoriere JSON-Parse-Fehler
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus(`Benutzer ${guid} und alle Daten erfolgreich gelöscht`, 'success');
+                    // Aktualisiere die Liste
+                    setTimeout(() => {
+                        loadUsers();
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || 'Unbekannter Fehler');
+                }
+            } catch (error) {
+                showStatus('Fehler: ' + error.message, 'error');
+            } finally {
+                setLoading(false);
+            }
+        }
+        
+        // Initial-Laden beim Öffnen der Seite
+        window.addEventListener('load', async () => {
+            // Prüfe zuerst die Authentifizierung
+            const isAuthenticated = await checkAuth();
+            if (isAuthenticated) {
+                loadUsers();
+            }
+        });
+    </script>
+</body>
+</html>
+

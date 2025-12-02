@@ -245,6 +245,94 @@ exports.createWithKey = (req, res) => {
 };
 
 /**
+ * Aktualisiert einen API-Key
+ */
+exports.update = (req, res) => {
+  try {
+    const { id } = req.params;
+    const apiKey = ApiKey.findById(id);
+    
+    if (!apiKey) {
+      return res.status(404).json({
+        success: false,
+        error: 'API key not found'
+      });
+    }
+
+    const {
+      name,
+      description,
+      canReadOwnUricAcid = false,
+      canWriteOwnUricAcid = false,
+      canReadOwnMeals = false,
+      canWriteOwnMeals = false,
+      canReadAllUricAcid = false,
+      canReadAllMeals = false,
+      isActive = true
+    } = req.body;
+
+    if (!name || name.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        error: 'Name is required'
+      });
+    }
+
+    // Prüfe ob mindestens eine Berechtigung gesetzt ist
+    const hasPermission = canReadOwnUricAcid || canWriteOwnUricAcid ||
+                          canReadOwnMeals || canWriteOwnMeals ||
+                          canReadAllUricAcid || canReadAllMeals;
+
+    if (!hasPermission) {
+      return res.status(400).json({
+        success: false,
+        error: 'At least one permission must be granted'
+      });
+    }
+
+    const updatedKey = ApiKey.update(id, {
+      name: name.trim(),
+      description: description ? description.trim() : null,
+      canReadOwnUricAcid,
+      canWriteOwnUricAcid,
+      canReadOwnMeals,
+      canWriteOwnMeals,
+      canReadAllUricAcid,
+      canReadAllMeals,
+      isActive
+    });
+
+    logger.info(`API Key updated: ${updatedKey.name} (ID: ${id})`);
+
+    res.json({
+      success: true,
+      data: {
+        id: updatedKey.id,
+        name: updatedKey.name,
+        description: updatedKey.description,
+        permissions: {
+          canReadOwnUricAcid: updatedKey.canReadOwnUricAcid,
+          canWriteOwnUricAcid: updatedKey.canWriteOwnUricAcid,
+          canReadOwnMeals: updatedKey.canReadOwnMeals,
+          canWriteOwnMeals: updatedKey.canWriteOwnMeals,
+          canReadAllUricAcid: updatedKey.canReadAllUricAcid,
+          canReadAllMeals: updatedKey.canReadAllMeals
+        },
+        createdAt: updatedKey.createdAt,
+        lastUsedAt: updatedKey.lastUsedAt,
+        isActive: updatedKey.isActive
+      }
+    });
+  } catch (error) {
+    logger.error('Error updating API key:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update API key'
+    });
+  }
+};
+
+/**
  * Löscht einen API-Key (soft delete)
  */
 exports.delete = (req, res) => {

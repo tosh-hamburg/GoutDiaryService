@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Harnsäure Tracker - Datenübersicht</title>
+    <title>Gicht Tagebuch - Datenübersicht</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         * {
@@ -12,12 +15,16 @@
             box-sizing: border-box;
         }
 
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #F5F5F7;
             min-height: 100vh;
             padding: 20px;
-            color: #333;
+            color: #000000;
         }
 
         .container {
@@ -28,26 +35,29 @@
         .header {
             background: white;
             padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             margin-bottom: 30px;
+            border: 1px solid #E5E5E7;
         }
 
         .header h1 {
-            color: #667eea;
+            color: #000000;
             margin-bottom: 10px;
+            font-weight: 600;
         }
 
         .header p {
-            color: #666;
+            color: #000000;
         }
 
         .search-section {
             background: white;
             padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             margin-bottom: 30px;
+            border: 1px solid #E5E5E7;
         }
 
         .search-form {
@@ -65,43 +75,52 @@
         .form-group label {
             display: block;
             margin-bottom: 5px;
-            font-weight: 600;
-            color: #555;
+            font-weight: 500;
+            color: #000000;
+            font-size: 14px;
         }
 
         .form-group input {
             width: 100%;
             padding: 12px;
-            border: 2px solid #e0e0e0;
+            border: 1px solid #D2D2D7;
             border-radius: 8px;
             font-size: 14px;
-            transition: border-color 0.3s;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: white;
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #0066FF;
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.1);
         }
 
         .btn {
             padding: 12px 30px;
-            background: #667eea;
+            background: #0066FF;
             color: white;
             border: none;
             border-radius: 8px;
             font-size: 14px;
-            font-weight: 600;
+            font-weight: 500;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: background 0.2s, transform 0.1s;
         }
 
         .btn:hover {
-            background: #5568d3;
+            background: #0052CC;
+            transform: translateY(-1px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
         }
 
         .btn:disabled {
-            background: #ccc;
+            background: #D2D2D7;
             cursor: not-allowed;
+            transform: none;
         }
 
         .stats-grid {
@@ -114,53 +133,59 @@
         .stat-card {
             background: white;
             padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border: 1px solid #E5E5E7;
         }
 
         .stat-card h3 {
-            color: #667eea;
+            color: #000000;
             margin-bottom: 15px;
             font-size: 16px;
+            font-weight: 500;
         }
 
         .stat-value {
             font-size: 32px;
-            font-weight: bold;
-            color: #333;
+            font-weight: 600;
+            color: #000000;
             margin-bottom: 5px;
         }
 
         .stat-label {
-            color: #666;
+            color: #000000;
             font-size: 14px;
         }
 
         .chart-container {
             background: white;
             padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             margin-bottom: 30px;
+            border: 1px solid #E5E5E7;
         }
 
         .chart-container h2 {
-            color: #667eea;
+            color: #000000;
             margin-bottom: 20px;
+            font-weight: 600;
         }
 
         .data-table {
             background: white;
             padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             margin-bottom: 30px;
             overflow-x: auto;
+            border: 1px solid #E5E5E7;
         }
 
         .data-table h2 {
-            color: #667eea;
+            color: #000000;
             margin-bottom: 20px;
+            font-weight: 600;
         }
 
         table {
@@ -175,38 +200,67 @@
         }
 
         th {
-            background: #f5f5f5;
-            font-weight: 600;
-            color: #555;
+            background: #F5F5F7;
+            font-weight: 500;
+            color: #000000;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         tr:hover {
-            background: #f9f9f9;
+            background: #F5F5F7;
         }
 
         .loading {
             text-align: center;
             padding: 40px;
-            color: #666;
+            color: #000000;
         }
 
         .error {
-            background: #fee;
-            color: #c33;
+            background: #FFF5F5;
+            color: #D32F2F;
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
+            border: 1px solid #FFCDD2;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .status.info {
+            background: #E3F2FF;
+            color: #0066FF;
+            border: 1px solid #B3D9FF;
+        }
+
+        .status.success {
+            background: #E8F5E9;
+            color: #2E7D32;
+            border: 1px solid #81C784;
+        }
+
+        .status.error {
+            background: #FFF5F5;
+            color: #D32F2F;
+            border: 1px solid #FFCDD2;
         }
 
         .user-info {
-            background: #e8f0fe;
+            background: #E3F2FF;
             padding: 15px;
             border-radius: 8px;
             margin-bottom: 20px;
+            border: 1px solid #B3D9FF;
         }
 
         .user-info strong {
-            color: #667eea;
+            color: #000000;
         }
 
         .badge {
@@ -219,44 +273,46 @@
         }
 
         .badge-yes {
-            background: #4caf50;
+            background: #34C759;
             color: white;
         }
 
         .badge-no {
-            background: #ccc;
-            color: #666;
+            background: #D2D2D7;
+            color: #86868B;
         }
 
         .tree-container {
             background: white;
             padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
             margin-bottom: 30px;
+            border: 1px solid #E5E5E7;
         }
 
         .tree-item {
             margin: 10px 0;
-            border-left: 3px solid #667eea;
+            border-left: 3px solid #0066FF;
             padding-left: 15px;
         }
 
         .tree-header {
-            font-weight: 600;
-            color: #667eea;
+            font-weight: 500;
+            color: #000000;
             cursor: pointer;
             padding: 10px;
-            background: #f5f5f5;
-            border-radius: 5px;
+            background: #F5F5F7;
+            border-radius: 8px;
             margin-bottom: 5px;
             display: flex;
             align-items: center;
             gap: 10px;
+            transition: background 0.2s;
         }
 
         .tree-header:hover {
-            background: #e8f0fe;
+            background: #E3F2FF;
         }
 
         .tree-content {
@@ -281,14 +337,14 @@
         .tree-subitem {
             margin: 5px 0;
             padding: 8px;
-            background: #fafafa;
-            border-radius: 5px;
+            background: #F5F5F7;
+            border-radius: 8px;
             font-size: 14px;
         }
 
         .tree-subitem-header {
-            font-weight: 600;
-            color: #764ba2;
+            font-weight: 500;
+            color: #000000;
             margin-bottom: 5px;
         }
 
@@ -302,35 +358,31 @@
         .tree-stat {
             background: white;
             padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            border: 1px solid #E5E5E7;
         }
 
         .tree-stat-label {
             font-size: 12px;
-            color: #666;
+            color: #000000;
         }
 
         .tree-stat-value {
             font-size: 18px;
-            font-weight: bold;
-            color: #333;
+            font-weight: 600;
+            color: #000000;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏥 Harnsäure Tracker - Datenübersicht</h1>
+            <h1>🏥 Gicht Tagebuch - Datenübersicht</h1>
             <p>Anonyme Datenanalyse und Visualisierung</p>
         </div>
 
-        <div class="search-section">
-            <button type="button" class="btn" id="loadAllBtn" style="width: 100%;">Alle Daten laden (Baumansicht)</button>
-        </div>
-
         <div id="errorContainer"></div>
-        <div id="treeContainer" class="tree-container" style="display: none;"></div>
+        <div id="treeContainer" class="tree-container"></div>
 
         <div id="userInfoContainer"></div>
 
@@ -404,6 +456,70 @@
         <div id="loadingContainer" class="loading" style="display: none;">
             <p>Lade Daten...</p>
         </div>
+
+        <!-- Benutzerverwaltung -->
+        <div id="userManagementContainer" style="display: none;">
+            <div class="search-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="color: #000000; margin: 0;">👥 Benutzerverwaltung</h2>
+                    <button onclick="loadUsers()" class="btn" style="background: #0066FF;">Aktualisieren</button>
+                </div>
+                
+                <div id="userManagementStatus" style="display: none; padding: 15px; border-radius: 8px; margin-bottom: 20px;"></div>
+                
+                <div id="userManagementLoading" style="display: none; text-align: center; padding: 20px;">
+                    <p>Lade Benutzer...</p>
+                </div>
+                
+                <div id="userManagementTable"></div>
+            </div>
+        </div>
+
+        <!-- Log Viewer -->
+        <div id="logViewerContainer" style="display: none;">
+            <div class="search-section">
+                <h2 style="color: #000000; margin-bottom: 20px;">📋 Log-Viewer</h2>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div class="form-group">
+                        <label>Log-Datei auswählen:</label>
+                        <select id="logFileSelect" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;" onchange="loadLogFile()">
+                            <option value="">-- Datei auswählen --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Log-Level filtern:</label>
+                        <select id="logLevelFilter" style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;" onchange="applyFilters()">
+                            <option value="">Alle Level</option>
+                            <option value="error">Error</option>
+                            <option value="warn">Warning</option>
+                            <option value="info">Info</option>
+                            <option value="debug">Debug</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Textsuche:</label>
+                        <input type="text" id="logSearchFilter" placeholder="Suche in Logs..." style="width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;" onkeyup="applyFilters()">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: flex-end;">
+                        <button onclick="applyFilters()" class="btn" style="width: 100%;">Filter anwenden</button>
+                    </div>
+                </div>
+                
+                <div id="logViewerStats" style="background: #F5F5F7; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: none;">
+                    <strong>Angezeigt:</strong> <span id="logViewerCount">0</span> von <span id="logViewerTotal">0</span> Einträgen
+                </div>
+                
+                <div id="logViewerContent" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #E5E5E7; max-height: 600px; overflow-y: auto;">
+                    <p style="text-align: center; color: #000000; padding: 40px;">Wähle eine Log-Datei aus, um die Einträge anzuzeigen</p>
+                </div>
+                
+                <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                    <button onclick="loadPreviousPage()" class="btn" id="prevPageBtn" disabled style="background: #0066FF;">← Vorherige Seite</button>
+                    <button onclick="loadNextPage()" class="btn" id="nextPageBtn" disabled style="background: #0066FF;">Nächste Seite →</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -453,12 +569,14 @@
                 userInfo.innerHTML = `
                     <div>
                         <strong>Angemeldet als:</strong> ${currentUser.email}
-                        ${currentUser.isAdmin ? '<span style="background: #4caf50; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px;">Admin</span>' : ''}
+                        ${currentUser.isAdmin ? '<span style="background: #34C759; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px;">Admin</span>' : ''}
                     </div>
-                    <div style="display: flex; gap: 10px;">
-                        ${currentUser.isAdmin ? '<button onclick="loadApiKeys()" style="padding: 8px 16px; background: #2196f3; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">API-Keys verwalten</button>' : ''}
-                        ${currentUser.isAdmin ? '<a href="/admin/deduplicate" style="padding: 8px 16px; background: #ff9800; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; text-decoration: none; display: inline-block;">Daten deduplizieren</a>' : ''}
-                        <button onclick="logout()" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">Abmelden</button>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="showSection('tree'); loadAllData();" style="padding: 8px 16px; background: #0066FF; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Baumansicht</button>
+                        ${currentUser.isAdmin ? '<button onclick="showSection(\'apiKeys\'); loadApiKeys();" style="padding: 8px 16px; background: #0066FF; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">API-Keys verwalten</button>' : ''}
+                        ${currentUser.isAdmin ? '<button onclick="showSection(\'userManagement\'); showUserManagement();" style="padding: 8px 16px; background: #FF3B30; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Benutzerverwaltung</button>' : ''}
+                        ${currentUser.isAdmin ? '<button onclick="showSection(\'logViewer\'); showLogViewer();" style="padding: 8px 16px; background: #0066FF; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Log-Viewer</button>' : ''}
+                        <button onclick="logout()" style="padding: 8px 16px; background: #FF3B30; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Abmelden</button>
                     </div>
                 `;
                 header.appendChild(userInfo);
@@ -477,12 +595,35 @@
             }
         }
 
-        // Prüfe Auth beim Laden
+        // Funktion zum Wechseln zwischen Bereichen
+        function showSection(sectionName) {
+            // Verstecke alle Container
+            document.getElementById('treeContainer').style.display = 'none';
+            document.getElementById('tablesContainer').style.display = 'none';
+            document.getElementById('statsContainer').style.display = 'none';
+            document.getElementById('chartsContainer').style.display = 'none';
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('logViewerContainer').style.display = 'none';
+            document.getElementById('userManagementContainer').style.display = 'none';
+            
+            // Zeige gewünschten Bereich
+            if (sectionName === 'tree') {
+                document.getElementById('treeContainer').style.display = 'block';
+            } else if (sectionName === 'apiKeys') {
+                // API-Keys werden im treeContainer angezeigt
+                document.getElementById('treeContainer').style.display = 'block';
+            } else if (sectionName === 'userManagement') {
+                document.getElementById('userManagementContainer').style.display = 'block';
+            } else if (sectionName === 'logViewer') {
+                document.getElementById('logViewerContainer').style.display = 'block';
+            }
+        }
+
+        // Prüfe Auth beim Laden und lade automatisch die Baumansicht
         checkAuth().then(isAuthenticated => {
             if (isAuthenticated) {
-                document.getElementById('loadAllBtn').addEventListener('click', async () => {
-                    await loadAllData();
-                });
+                // Lade automatisch die Baumansicht beim Start
+                loadAllData();
             }
         });
 
@@ -496,19 +637,12 @@
         }
 
         async function loadAllData() {
-            const loadBtn = document.getElementById('loadAllBtn');
             const loadingContainer = document.getElementById('loadingContainer');
             const treeContainer = document.getElementById('treeContainer');
-            const statsContainer = document.getElementById('statsContainer');
-            const chartsContainer = document.getElementById('chartsContainer');
-            const tablesContainer = document.getElementById('tablesContainer');
 
-            loadBtn.disabled = true;
+            // Zeige nur Baumansicht, verstecke alle anderen Bereiche
+            showSection('tree');
             loadingContainer.style.display = 'block';
-            treeContainer.style.display = 'none';
-            statsContainer.style.display = 'none';
-            chartsContainer.style.display = 'none';
-            tablesContainer.style.display = 'none';
             clearError();
 
             try {
@@ -570,10 +704,15 @@
                     if (user.gender) userInfo.push(`Geschlecht: ${genderMap[user.gender] || user.gender}`);
                     if (user.birthYear) userInfo.push(`Geburtsjahr: ${user.birthYear}`);
                     userInfo.push(`Registriert: ${new Date(user.createdAt).toLocaleString('de-DE')}`);
+                    if (user.lastBackupTimestamp) {
+                        userInfo.push(`Letztes Backup: ${new Date(user.lastBackupTimestamp).toLocaleString('de-DE')}`);
+                    } else {
+                        userInfo.push(`Letztes Backup: Kein Backup`);
+                    }
                     
                     // Admin-Badge hinzufügen
-                    const adminBadge = user.isAdmin ? '<span style="background: #4caf50; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; font-weight: bold;">🔑 Admin</span>' : '';
-                    const emailInfo = user.email ? `<span style="color: #667eea; margin-left: 10px;"><strong>Email:</strong> ${user.email}</span>` : '';
+                    const adminBadge = user.isAdmin ? '<span style="background: #34C759; color: white; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-left: 10px; font-weight: bold;">🔑 Admin</span>' : '';
+                    const emailInfo = user.email ? `<span style="color: #0066FF; margin-left: 10px;"><strong>Email:</strong> ${user.email}</span>` : '';
 
                     treeHTML.push(`
                         <div class="tree-item">
@@ -582,7 +721,7 @@
                                 <span><strong>GUID:</strong> ${user.guid}</span>
                                 ${adminBadge}
                                 ${emailInfo}
-                                ${userInfo.length > 0 ? `<span style="color: #666; margin-left: 10px;">(${userInfo.join(', ')})</span>` : ''}
+                                ${userInfo.length > 0 ? `<span style="color: #000000; margin-left: 10px;">(${userInfo.join(', ')})</span>` : ''}
                             </div>
                             <div class="tree-content">
                                 <div class="tree-stats">
@@ -618,7 +757,7 @@
                                             ${value.notes ? ` - ${value.notes}` : ''}
                                         </div>
                                     `).join('')}
-                                    ${(uricAcidData.data || []).length > 10 ? `<div style="color: #666; font-size: 12px; margin-top: 5px;">... und ${(uricAcidData.data || []).length - 10} weitere</div>` : ''}
+                                    ${(uricAcidData.data || []).length > 10 ? `<div style="color: #000000; font-size: 12px; margin-top: 5px;">... und ${(uricAcidData.data || []).length - 10} weitere</div>` : ''}
                                 </div>
 
                                 <div class="tree-subitem">
@@ -632,7 +771,7 @@
                                         };
                                         const components = meal.components || [];
                                         const componentsList = components.length > 0 
-                                            ? `<div style="margin-top: 5px; padding-left: 15px; font-size: 12px; color: #666;">
+                                            ? `<div style="margin-top: 5px; padding-left: 15px; font-size: 12px; color: #86868B;">
                                                 <strong>Komponenten:</strong> ${components.map(c => 
                                                     `${c.foodItemName} (${c.estimatedWeight}g, ${c.purin}mg Purin)`
                                                 ).join(', ')}
@@ -648,7 +787,7 @@
                                             </div>
                                         `;
                                     }).join('')}
-                                    ${(mealsData.data || []).length > 10 ? `<div style="color: #666; font-size: 12px; margin-top: 5px;">... und ${(mealsData.data || []).length - 10} weitere</div>` : ''}
+                                    ${(mealsData.data || []).length > 10 ? `<div style="color: #000000; font-size: 12px; margin-top: 5px;">... und ${(mealsData.data || []).length - 10} weitere</div>` : ''}
                                 </div>
 
                                 ${(foodItemsData.data || []).length > 0 ? `
@@ -686,7 +825,7 @@
                                                 <div style="flex: 1;">
                                                     <strong>${foodItem.name}</strong>
                                                     <span style="background: #e3f2fd; color: #1976d2; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 8px;">${categoryName}</span>
-                                                    <div style="font-size: 11px; color: #666; margin-top: 3px;">
+                                                    <div style="font-size: 11px; color: #86868B; margin-top: 3px;">
                                                         Purin: ${foodItem.purinPer100g} mg/100g | 
                                                         Harnsäure: ${foodItem.uricAcidPer100g} mg/100g | 
                                                         Kalorien: ${foodItem.caloriesPer100g} kcal/100g | 
@@ -705,15 +844,16 @@
 
                 // Erstelle Benutzer-Tabelle
                 let usersTableHTML = `
-                    <div style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 30px;">
-                        <h2 style="color: #667eea; margin-bottom: 20px;">Registrierte Benutzer (${users.length})</h2>
+                    <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #E5E5E7; margin-bottom: 30px;">
+                        <h2 style="color: #000000; margin-bottom: 20px;">Registrierte Benutzer (${users.length})</h2>
                         <table style="width: 100%; border-collapse: collapse;">
                             <thead>
-                                <tr style="background: #f5f5f5; border-bottom: 2px solid #667eea;">
+                                <tr style="background: #F5F5F7; border-bottom: 1px solid #E5E5E7;">
                                     <th style="padding: 12px; text-align: left; font-weight: 600;">Email</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 600;">GUID</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 600;">Rolle</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 600;">Registriert</th>
+                                    <th style="padding: 12px; text-align: left; font-weight: 600;">Letztes Backup</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 600;">Geschlecht</th>
                                     <th style="padding: 12px; text-align: left; font-weight: 600;">Geburtsjahr</th>
                                     ${isDevelopment ? '<th style="padding: 12px; text-align: left; font-weight: 600;">Aktionen</th>' : ''}
@@ -724,8 +864,8 @@
                 
                 users.forEach((user, index) => {
                     const roleBadge = user.isAdmin 
-                        ? '<span style="background: #4caf50; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: bold;">🔑 Super-Admin</span>'
-                        : '<span style="background: #9e9e9e; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Benutzer</span>';
+                        ? '<span style="background: #34C759; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: bold;">🔑 Super-Admin</span>'
+                        : '<span style="background: #86868B; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Benutzer</span>';
                     
                     const genderMap = {
                         'MALE': 'Männlich',
@@ -736,21 +876,27 @@
                     const deleteButton = isDevelopment 
                         ? `<td style="padding: 12px;">
                             <button onclick="deleteUserBackupData('${user.guid}')" 
-                                    style="background: #f44336; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;"
+                                    style="background: #FF3B30; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600;"
                                     title="Löscht alle Backup-Daten dieses Benutzers (nur Development)">
                                 🗑️ Backup-Daten löschen
                             </button>
                            </td>`
                         : '';
                     
+                    // Formatiere letztes Backup-Datum
+                    const lastBackupDate = user.lastBackupTimestamp 
+                        ? new Date(user.lastBackupTimestamp).toLocaleString('de-DE')
+                        : '<span style="color: #86868B; font-style: italic;">Kein Backup</span>';
+                    
                     usersTableHTML += `
                         <tr style="border-bottom: 1px solid #e0e0e0; ${index % 2 === 0 ? 'background: #fafafa;' : ''}">
-                            <td style="padding: 12px;">${user.email || '<span style="color: #999;">-</span>'}</td>
+                            <td style="padding: 12px;">${user.email || '<span style="color: #86868B;">-</span>'}</td>
                             <td style="padding: 12px; font-family: monospace; font-size: 12px;">${user.guid}</td>
                             <td style="padding: 12px;">${roleBadge}</td>
                             <td style="padding: 12px;">${new Date(user.createdAt).toLocaleString('de-DE')}</td>
-                            <td style="padding: 12px;">${user.gender ? genderMap[user.gender] || user.gender : '<span style="color: #999;">-</span>'}</td>
-                            <td style="padding: 12px;">${user.birthYear || '<span style="color: #999;">-</span>'}</td>
+                            <td style="padding: 12px; font-size: 13px; color: #86868B;">${lastBackupDate}</td>
+                            <td style="padding: 12px;">${user.gender ? genderMap[user.gender] || user.gender : '<span style="color: #86868B;">-</span>'}</td>
+                            <td style="padding: 12px;">${user.birthYear || '<span style="color: #86868B;">-</span>'}</td>
                             ${deleteButton}
                         </tr>
                     `;
@@ -763,20 +909,19 @@
                 `;
                 
                 if (treeHTML.length === 0) {
-                    treeContainer.innerHTML = usersTableHTML + '<div style="text-align: center; padding: 40px; color: #666;">Keine Daten gefunden</div>';
+                    treeContainer.innerHTML = usersTableHTML + '<div style="text-align: center; padding: 40px; color: #86868B;">Keine Daten gefunden</div>';
                 } else {
                     treeContainer.innerHTML = usersTableHTML + `
-                        <h2 style="color: #667eea; margin-bottom: 20px;">Alle erfassten Daten (${users.length} Benutzer)</h2>
+                        <h2 style="color: #000000; margin-bottom: 20px;">Alle erfassten Daten (${users.length} Benutzer)</h2>
                         ${treeHTML.join('')}
                     `;
                 }
 
-                treeContainer.style.display = 'block';
+                // Baumansicht wird bereits durch showSection('tree') angezeigt
             } catch (error) {
                 console.error('Error loading all data:', error);
                 showError(`Fehler: ${error.message}`);
             } finally {
-                loadBtn.disabled = false;
                 loadingContainer.style.display = 'none';
             }
         }
@@ -795,13 +940,11 @@
         }
 
         async function loadData(userGuid, days) {
-            const loadBtn = document.getElementById('loadBtn');
             const loadingContainer = document.getElementById('loadingContainer');
             const statsContainer = document.getElementById('statsContainer');
             const chartsContainer = document.getElementById('chartsContainer');
             const tablesContainer = document.getElementById('tablesContainer');
 
-            loadBtn.disabled = true;
             loadingContainer.style.display = 'block';
             statsContainer.style.display = 'none';
             chartsContainer.style.display = 'none';
@@ -859,7 +1002,6 @@
                 console.error('Error loading data:', error);
                 showError(`Fehler: ${error.message}`);
             } finally {
-                loadBtn.disabled = false;
                 loadingContainer.style.display = 'none';
             }
         }
@@ -872,7 +1014,11 @@
                 'DIVERSE': 'Divers'
             };
             
-            const adminBadge = user.isAdmin ? '<span style="background: #4caf50; color: white; padding: 4px 12px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 10px;">🔑 Super-Admin</span>' : '<span style="background: #9e9e9e; color: white; padding: 4px 12px; border-radius: 6px; font-size: 14px; margin-left: 10px;">Benutzer</span>';
+            const adminBadge = user.isAdmin ? '<span style="background: #34C759; color: white; padding: 4px 12px; border-radius: 6px; font-size: 14px; font-weight: bold; margin-left: 10px;">🔑 Super-Admin</span>' : '<span style="background: #86868B; color: white; padding: 4px 12px; border-radius: 6px; font-size: 14px; margin-left: 10px;">Benutzer</span>';
+            
+            const lastBackupInfo = user.lastBackupTimestamp 
+                ? `Letztes Backup: ${new Date(user.lastBackupTimestamp).toLocaleString('de-DE')}<br>`
+                : `Letztes Backup: Kein Backup<br>`;
             
             container.innerHTML = `
                 <div class="user-info">
@@ -881,7 +1027,8 @@
                     ${user.email ? `Email: ${user.email}<br>` : ''}
                     ${user.gender ? `Geschlecht: ${genderMap[user.gender] || user.gender}<br>` : ''}
                     ${user.birthYear ? `Geburtsjahr: ${user.birthYear}<br>` : ''}
-                    Registriert: ${new Date(user.createdAt).toLocaleString('de-DE')}
+                    Registriert: ${new Date(user.createdAt).toLocaleString('de-DE')}<br>
+                    ${lastBackupInfo}
                 </div>
             `;
         }
@@ -912,8 +1059,8 @@
                     datasets: [{
                         label: 'Harnsäurewert (mg/dL)',
                         data: sortedValues.map(v => v.value),
-                        borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                        borderColor: '#0066FF',
+                        backgroundColor: 'rgba(0, 102, 255, 0.1)',
                         tension: 0.4,
                         fill: true
                     }]
@@ -923,7 +1070,12 @@
                     maintainAspectRatio: true,
                     plugins: {
                         legend: {
-                            display: true
+                            display: true,
+                            labels: {
+                                font: {
+                                    family: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                }
+                            }
                         }
                     },
                     scales: {
@@ -931,7 +1083,22 @@
                             beginAtZero: false,
                             title: {
                                 display: true,
-                                text: 'mg/dL'
+                                text: 'mg/dL',
+                                font: {
+                                    family: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                }
                             }
                         }
                     }
@@ -963,8 +1130,8 @@
                     datasets: [{
                         label: 'Purin-Aufnahme (mg)',
                         data: sortedDates.map(date => mealsByDate[date]),
-                        backgroundColor: '#764ba2',
-                        borderColor: '#667eea',
+                        backgroundColor: '#0066FF',
+                        borderColor: '#0066FF',
                         borderWidth: 1
                     }]
                 },
@@ -973,7 +1140,12 @@
                     maintainAspectRatio: true,
                     plugins: {
                         legend: {
-                            display: true
+                            display: true,
+                            labels: {
+                                font: {
+                                    family: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                }
+                            }
                         }
                     },
                     scales: {
@@ -981,7 +1153,22 @@
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'mg'
+                                text: 'mg',
+                                font: {
+                                    family: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                }
+                            },
+                            ticks: {
+                                font: {
+                                    family: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                font: {
+                                    family: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                }
                             }
                         }
                     }
@@ -1025,7 +1212,7 @@
                         }).join('')}
                     </tbody>
                 </table>
-                ${uricAcidValues.length > 50 ? `<p style="margin-top: 10px; color: #666;">Zeige 50 von ${uricAcidValues.length} Einträgen</p>` : ''}
+                ${uricAcidValues.length > 50 ? `<p style="margin-top: 10px; color: #86868B;">Zeige 50 von ${uricAcidValues.length} Einträgen</p>` : ''}
             `;
             document.getElementById('uricAcidTableContainer').innerHTML = uricAcidTable;
 
@@ -1070,11 +1257,11 @@
                                 ${components.length > 0 ? `
                                 <tr style="background: #f9f9f9;">
                                     <td colspan="7" style="padding: 10px 12px;">
-                                        <div style="font-size: 12px; color: #666;">
+                                        <div style="font-size: 12px; color: #86868B;">
                                             <strong>Komponenten-Details:</strong>
                                             <div style="margin-top: 5px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px;">
                                                 ${components.map(c => `
-                                                    <div style="padding: 5px; background: white; border-radius: 3px; border-left: 3px solid #667eea;">
+                                                    <div style="padding: 5px; background: white; border-radius: 3px; border-left: 3px solid #0066FF;">
                                                         <strong>${c.foodItemName}</strong><br>
                                                         Gewicht: ${c.estimatedWeight}g | 
                                                         Purin: ${c.purin}mg | 
@@ -1091,7 +1278,7 @@
                         }).join('')}
                     </tbody>
                 </table>
-                ${meals.length > 50 ? `<p style="margin-top: 10px; color: #666;">Zeige 50 von ${meals.length} Einträgen</p>` : ''}
+                ${meals.length > 50 ? `<p style="margin-top: 10px; color: #86868B;">Zeige 50 von ${meals.length} Einträgen</p>` : ''}
             `;
             document.getElementById('mealsTableContainer').innerHTML = mealsTable;
 
@@ -1151,8 +1338,8 @@
                         }).join('')}
                     </tbody>
                 </table>
-                ${foodItems.length > 100 ? `<p style="margin-top: 10px; color: #666;">Zeige 100 von ${foodItems.length} Lebensmitteln</p>` : ''}
-                ${foodItems.length === 0 ? '<p style="text-align: center; padding: 40px; color: #666;">Keine benutzerdefinierten Lebensmittel gefunden</p>' : ''}
+                ${foodItems.length > 100 ? `<p style="margin-top: 10px; color: #86868B;">Zeige 100 von ${foodItems.length} Lebensmitteln</p>` : ''}
+                ${foodItems.length === 0 ? '<p style="text-align: center; padding: 40px; color: #86868B;">Keine benutzerdefinierten Lebensmittel gefunden</p>' : ''}
             `;
             document.getElementById('foodItemsTableContainer').innerHTML = foodItemsTable;
         }
@@ -1186,17 +1373,16 @@
             const treeContainer = document.getElementById('treeContainer');
             
             let html = `
-                <div style="background: white; padding: 25px; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); margin-bottom: 30px;">
+                <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #E5E5E7; margin-bottom: 30px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                        <h2 style="color: #667eea; margin: 0;">API-Keys (${apiKeys.length})</h2>
+                        <h2 style="color: #000000; margin: 0;">API-Keys (${apiKeys.length})</h2>
                         <div style="display: flex; gap: 10px;">
-                            <button onclick="showCreateApiKeyForm()" style="padding: 10px 20px; background: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">+ Neuer API-Key</button>
-                            <button onclick="showAddApiKeyForm()" style="padding: 10px 20px; background: #2196f3; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">+ API-Key hinzufügen</button>
+                            <button onclick="showCreateApiKeyForm()" style="padding: 10px 20px; background: #34C759; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">+ Neuer API-Key</button>
                         </div>
                     </div>
                     <table style="width: 100%; border-collapse: collapse;">
                         <thead>
-                            <tr style="background: #f5f5f5; border-bottom: 2px solid #667eea;">
+                            <tr style="background: #F5F5F7; border-bottom: 1px solid #E5E5E7;">
                                 <th style="padding: 12px; text-align: left; font-weight: 600;">Name</th>
                                 <th style="padding: 12px; text-align: left; font-weight: 600;">Beschreibung</th>
                                 <th style="padding: 12px; text-align: left; font-weight: 600;">Berechtigungen</th>
@@ -1211,31 +1397,36 @@
 
             apiKeys.forEach((key, index) => {
                 const permissions = [];
+                const adminPermissions = [];
                 if (key.permissions.canReadOwnUricAcid) permissions.push('Eigene Harnsäurewerte lesen');
                 if (key.permissions.canWriteOwnUricAcid) permissions.push('Eigene Harnsäurewerte schreiben');
                 if (key.permissions.canReadOwnMeals) permissions.push('Eigene Mahlzeiten lesen');
                 if (key.permissions.canWriteOwnMeals) permissions.push('Eigene Mahlzeiten schreiben');
-                if (key.permissions.canReadAllUricAcid) permissions.push('Alle Harnsäurewerte lesen');
-                if (key.permissions.canReadAllMeals) permissions.push('Alle Mahlzeiten lesen');
+                if (key.permissions.canReadAllUricAcid) adminPermissions.push('🔑 Alle Harnsäurewerte lesen (Admin)');
+                if (key.permissions.canReadAllMeals) adminPermissions.push('🔑 Alle Mahlzeiten lesen (Admin)');
 
                 const statusBadge = key.isActive 
-                    ? '<span style="background: #4caf50; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Aktiv</span>'
-                    : '<span style="background: #f44336; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Inaktiv</span>';
+                    ? '<span style="background: #34C759; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Aktiv</span>'
+                    : '<span style="background: #FF3B30; color: white; padding: 4px 12px; border-radius: 6px; font-size: 12px;">Inaktiv</span>';
 
                 html += `
                     <tr style="border-bottom: 1px solid #e0e0e0; ${index % 2 === 0 ? 'background: #fafafa;' : ''}">
                         <td style="padding: 12px; font-weight: 600;">${key.name}</td>
-                        <td style="padding: 12px;">${key.description || '<span style="color: #999;">-</span>'}</td>
+                        <td style="padding: 12px;">${key.description || '<span style="color: #86868B;">-</span>'}</td>
                         <td style="padding: 12px;">
                             <div style="display: flex; flex-wrap: wrap; gap: 5px;">
                                 ${permissions.map(p => `<span style="background: #e3f2fd; color: #1976d2; padding: 2px 8px; border-radius: 4px; font-size: 11px;">${p}</span>`).join('')}
+                                ${adminPermissions.map(p => `<span style="background: #fff3cd; color: #856404; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; border: 1px solid #ff9800;">${p}</span>`).join('')}
                             </div>
                         </td>
                         <td style="padding: 12px;">${new Date(key.createdAt).toLocaleString('de-DE')}</td>
-                        <td style="padding: 12px;">${key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleString('de-DE') : '<span style="color: #999;">Nie</span>'}</td>
+                        <td style="padding: 12px;">${key.lastUsedAt ? new Date(key.lastUsedAt).toLocaleString('de-DE') : '<span style="color: #86868B;">Nie</span>'}</td>
                         <td style="padding: 12px;">${statusBadge}</td>
                         <td style="padding: 12px;">
-                            <button onclick="deleteApiKey('${key.id}', '${key.name}')" style="padding: 6px 12px; background: #f44336; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 12px;">Löschen</button>
+                            <div style="display: flex; gap: 5px;">
+                                <button onclick="editApiKey('${key.id}')" style="padding: 6px 12px; background: #0066FF; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px;">Bearbeiten</button>
+                                <button onclick="deleteApiKey('${key.id}', '${key.name}')" style="padding: 6px 12px; background: #FF3B30; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px;">Löschen</button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -1255,7 +1446,7 @@
             const formHTML = `
                 <div id="apiKeyFormModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
                     <div style="background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
-                        <h2 style="color: #667eea; margin-bottom: 20px;">Neuen API-Key erstellen</h2>
+                        <h2 style="color: #000000; margin-bottom: 20px;">Neuen API-Key erstellen</h2>
                         <form id="createApiKeyForm">
                             <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 5px; font-weight: 600;">Name *</label>
@@ -1267,36 +1458,47 @@
                             </div>
                             <div style="margin-bottom: 20px;">
                                 <label style="display: block; margin-bottom: 10px; font-weight: 600;">Berechtigungen</label>
-                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                                    <label style="display: flex; align-items: center; cursor: pointer;">
-                                        <input type="checkbox" name="canReadOwnUricAcid" style="margin-right: 8px;">
-                                        <span>Eigene Harnsäurewerte lesen</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; cursor: pointer;">
-                                        <input type="checkbox" name="canWriteOwnUricAcid" style="margin-right: 8px;">
-                                        <span>Eigene Harnsäurewerte schreiben</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; cursor: pointer;">
-                                        <input type="checkbox" name="canReadOwnMeals" style="margin-right: 8px;">
-                                        <span>Eigene Mahlzeiten lesen</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; cursor: pointer;">
-                                        <input type="checkbox" name="canWriteOwnMeals" style="margin-right: 8px;">
-                                        <span>Eigene Mahlzeiten schreiben</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; cursor: pointer;">
-                                        <input type="checkbox" name="canReadAllUricAcid" style="margin-right: 8px;">
-                                        <span>Alle Harnsäurewerte lesen</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; cursor: pointer;">
-                                        <input type="checkbox" name="canReadAllMeals" style="margin-right: 8px;">
-                                        <span>Alle Mahlzeiten lesen</span>
-                                    </label>
+                                
+                                <div style="margin-bottom: 20px; padding: 15px; background: #F5F5F7; border-radius: 8px; border-left: 4px solid #0066FF;">
+                                    <h3 style="margin: 0 0 10px 0; color: #0066FF; font-size: 14px; font-weight: 600;">Eigene Daten</h3>
+                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canReadOwnUricAcid" style="margin-right: 8px;">
+                                            <span>Eigene Harnsäurewerte lesen</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canWriteOwnUricAcid" style="margin-right: 8px;">
+                                            <span>Eigene Harnsäurewerte schreiben</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canReadOwnMeals" style="margin-right: 8px;">
+                                            <span>Eigene Mahlzeiten lesen</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canWriteOwnMeals" style="margin-right: 8px;">
+                                            <span>Eigene Mahlzeiten schreiben</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div style="padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ff9800;">
+                                    <h3 style="margin: 0 0 10px 0; color: #856404; font-size: 14px; font-weight: 600;">🔑 Admin-Berechtigungen (für Zugriff auf alle GUIDs)</h3>
+                                    <p style="margin: 0 0 10px 0; color: #856404; font-size: 12px;">Diese Berechtigungen ermöglichen den Zugriff auf Daten aller Benutzer und sind erforderlich für den Endpoint /api/v1/admin/users/guids</p>
+                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canReadAllUricAcid" style="margin-right: 8px;">
+                                            <span><strong>Alle Harnsäurewerte lesen</strong> (Admin)</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canReadAllMeals" style="margin-right: 8px;">
+                                            <span><strong>Alle Mahlzeiten lesen</strong> (Admin)</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                             <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                                <button type="button" onclick="closeApiKeyForm()" style="padding: 10px 20px; background: #ccc; color: #333; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Abbrechen</button>
-                                <button type="submit" style="padding: 10px 20px; background: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Erstellen</button>
+                                <button type="button" onclick="closeApiKeyForm()" style="padding: 10px 20px; background: #D2D2D7; color: #000000; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Abbrechen</button>
+                                <button type="submit" style="padding: 10px 20px; background: #34C759; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Erstellen</button>
                             </div>
                         </form>
                     </div>
@@ -1350,20 +1552,20 @@
             const modalHTML = `
                 <div id="apiKeyDisplayModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1001;">
                     <div style="background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%;">
-                        <h2 style="color: #667eea; margin-bottom: 15px;">✅ API-Key erstellt: ${keyName}</h2>
+                        <h2 style="color: #000000; margin-bottom: 15px;">✅ API-Key erstellt: ${keyName}</h2>
                         <div style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
                             <strong style="color: #856404;">⚠️ WICHTIG:</strong>
                             <p style="margin: 10px 0 0 0; color: #856404;">Speichere diesen Key jetzt! Er wird nicht erneut angezeigt.</p>
                         </div>
                         <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #555;">API-Key:</label>
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #000000;">API-Key:</label>
                             <div style="display: flex; gap: 10px;">
-                                <input type="text" id="apiKeyDisplay" value="${apiKey}" readonly style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: monospace; background: #f5f5f5; cursor: text;" onclick="this.select();">
-                                <button onclick="copyApiKey()" style="padding: 12px 20px; background: #4caf50; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap;">📋 Kopieren</button>
+                                <input type="text" id="apiKeyDisplay" value="${apiKey}" readonly style="flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: monospace; background: #F5F5F7; cursor: text;" onclick="this.select();">
+                                <button onclick="copyApiKey()" style="padding: 12px 20px; background: #34C759; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap;">📋 Kopieren</button>
                             </div>
                         </div>
                         <div style="display: flex; justify-content: flex-end;">
-                            <button onclick="closeApiKeyModal()" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Schließen</button>
+                            <button onclick="closeApiKeyModal()" style="padding: 10px 20px; background: #0066FF; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Schließen</button>
                         </div>
                     </div>
                 </div>
@@ -1384,10 +1586,10 @@
                     if (btn) {
                         const originalText = btn.textContent;
                         btn.textContent = '✅ Kopiert!';
-                        btn.style.background = '#4caf50';
+                        btn.style.background = '#34C759';
                         setTimeout(() => {
                             btn.textContent = originalText;
-                            btn.style.background = '#4caf50';
+                            btn.style.background = '#34C759';
                         }, 2000);
                     }
                 } else {
@@ -1401,10 +1603,10 @@
                         if (btn) {
                             const originalText = btn.textContent;
                             btn.textContent = '✅ Kopiert!';
-                            btn.style.background = '#4caf50';
+                            btn.style.background = '#34C759';
                             setTimeout(() => {
                                 btn.textContent = originalText;
-                                btn.style.background = '#4caf50';
+                                btn.style.background = '#34C759';
                             }, 2000);
                         }
                     }).catch(() => {
@@ -1427,12 +1629,12 @@
             const formHTML = `
                 <div id="addApiKeyFormModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
                     <div style="background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
-                        <h2 style="color: #667eea; margin-bottom: 20px;">API-Key manuell hinzufügen</h2>
+                        <h2 style="color: #000000; margin-bottom: 20px;">API-Key manuell hinzufügen</h2>
                         <form id="addApiKeyForm">
                             <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 5px; font-weight: 600;">API-Key *</label>
                                 <input type="text" name="key" required placeholder="hst_..." style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px; font-family: monospace;">
-                                <small style="color: #666; display: block; margin-top: 5px;">Geben Sie den bestehenden API-Key ein, den Sie hinzufügen möchten.</small>
+                                <small style="color: #86868B; display: block; margin-top: 5px;">Geben Sie den bestehenden API-Key ein, den Sie hinzufügen möchten.</small>
                             </div>
                             <div style="margin-bottom: 15px;">
                                 <label style="display: block; margin-bottom: 5px; font-weight: 600;">Name *</label>
@@ -1444,36 +1646,47 @@
                             </div>
                             <div style="margin-bottom: 20px;">
                                 <label style="display: block; margin-bottom: 10px; font-weight: 600;">Berechtigungen</label>
-                                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
-                                    <label style="display: flex; align-items: center; cursor: pointer;">
-                                        <input type="checkbox" name="canReadOwnUricAcid" style="margin-right: 8px;">
-                                        <span>Eigene Harnsäurewerte lesen</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; cursor: pointer;">
-                                        <input type="checkbox" name="canWriteOwnUricAcid" style="margin-right: 8px;">
-                                        <span>Eigene Harnsäurewerte schreiben</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; cursor: pointer;">
-                                        <input type="checkbox" name="canReadOwnMeals" style="margin-right: 8px;">
-                                        <span>Eigene Mahlzeiten lesen</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; cursor: pointer;">
-                                        <input type="checkbox" name="canWriteOwnMeals" style="margin-right: 8px;">
-                                        <span>Eigene Mahlzeiten schreiben</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; cursor: pointer;">
-                                        <input type="checkbox" name="canReadAllUricAcid" style="margin-right: 8px;">
-                                        <span>Alle Harnsäurewerte lesen</span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; cursor: pointer;">
-                                        <input type="checkbox" name="canReadAllMeals" style="margin-right: 8px;">
-                                        <span>Alle Mahlzeiten lesen</span>
-                                    </label>
+                                
+                                <div style="margin-bottom: 20px; padding: 15px; background: #F5F5F7; border-radius: 8px; border-left: 4px solid #0066FF;">
+                                    <h3 style="margin: 0 0 10px 0; color: #0066FF; font-size: 14px; font-weight: 600;">Eigene Daten</h3>
+                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canReadOwnUricAcid" style="margin-right: 8px;">
+                                            <span>Eigene Harnsäurewerte lesen</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canWriteOwnUricAcid" style="margin-right: 8px;">
+                                            <span>Eigene Harnsäurewerte schreiben</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canReadOwnMeals" style="margin-right: 8px;">
+                                            <span>Eigene Mahlzeiten lesen</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canWriteOwnMeals" style="margin-right: 8px;">
+                                            <span>Eigene Mahlzeiten schreiben</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div style="padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ff9800;">
+                                    <h3 style="margin: 0 0 10px 0; color: #856404; font-size: 14px; font-weight: 600;">🔑 Admin-Berechtigungen (für Zugriff auf alle GUIDs)</h3>
+                                    <p style="margin: 0 0 10px 0; color: #856404; font-size: 12px;">Diese Berechtigungen ermöglichen den Zugriff auf Daten aller Benutzer und sind erforderlich für den Endpoint /api/v1/admin/users/guids</p>
+                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canReadAllUricAcid" style="margin-right: 8px;">
+                                            <span><strong>Alle Harnsäurewerte lesen</strong> (Admin)</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canReadAllMeals" style="margin-right: 8px;">
+                                            <span><strong>Alle Mahlzeiten lesen</strong> (Admin)</span>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                             <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                                <button type="button" onclick="closeAddApiKeyForm()" style="padding: 10px 20px; background: #ccc; color: #333; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Abbrechen</button>
-                                <button type="submit" style="padding: 10px 20px; background: #2196f3; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Hinzufügen</button>
+                                <button type="button" onclick="closeAddApiKeyForm()" style="padding: 10px 20px; background: #D2D2D7; color: #000000; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Abbrechen</button>
+                                <button type="submit" style="padding: 10px 20px; background: #0066FF; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Hinzufügen</button>
                             </div>
                         </form>
                     </div>
@@ -1524,6 +1737,138 @@
             if (modal) modal.remove();
         }
 
+        async function editApiKey(id) {
+            try {
+                const response = await fetch(`${API_BASE}/admin/api-keys/${id}`, {
+                    credentials: 'include'
+                });
+                const result = await response.json();
+                
+                if (!result.success) {
+                    throw new Error(result.error || 'Fehler beim Laden des API-Keys');
+                }
+
+                const key = result.data;
+                showEditApiKeyForm(key);
+            } catch (error) {
+                console.error('Error loading API key:', error);
+                alert(`Fehler: ${error.message}`);
+            }
+        }
+
+        function showEditApiKeyForm(key) {
+            const formHTML = `
+                <div id="editApiKeyFormModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+                    <div style="background: white; padding: 30px; border-radius: 15px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto;">
+                        <h2 style="color: #000000; margin-bottom: 20px;">API-Key bearbeiten: ${key.name}</h2>
+                        <form id="editApiKeyForm">
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Name *</label>
+                                <input type="text" name="name" value="${key.name}" required style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: 600;">Beschreibung</label>
+                                <textarea name="description" rows="3" style="width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 14px;">${key.description || ''}</textarea>
+                            </div>
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 10px; font-weight: 600;">Berechtigungen</label>
+                                
+                                <div style="margin-bottom: 20px; padding: 15px; background: #F5F5F7; border-radius: 8px; border-left: 4px solid #0066FF;">
+                                    <h3 style="margin: 0 0 10px 0; color: #0066FF; font-size: 14px; font-weight: 600;">Eigene Daten</h3>
+                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canReadOwnUricAcid" ${key.permissions.canReadOwnUricAcid ? 'checked' : ''} style="margin-right: 8px;">
+                                            <span>Eigene Harnsäurewerte lesen</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canWriteOwnUricAcid" ${key.permissions.canWriteOwnUricAcid ? 'checked' : ''} style="margin-right: 8px;">
+                                            <span>Eigene Harnsäurewerte schreiben</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canReadOwnMeals" ${key.permissions.canReadOwnMeals ? 'checked' : ''} style="margin-right: 8px;">
+                                            <span>Eigene Mahlzeiten lesen</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canWriteOwnMeals" ${key.permissions.canWriteOwnMeals ? 'checked' : ''} style="margin-right: 8px;">
+                                            <span>Eigene Mahlzeiten schreiben</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                <div style="padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ff9800;">
+                                    <h3 style="margin: 0 0 10px 0; color: #856404; font-size: 14px; font-weight: 600;">🔑 Admin-Berechtigungen (für Zugriff auf alle GUIDs)</h3>
+                                    <p style="margin: 0 0 10px 0; color: #856404; font-size: 12px;">Diese Berechtigungen ermöglichen den Zugriff auf Daten aller Benutzer und sind erforderlich für den Endpoint /api/v1/admin/users/guids</p>
+                                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canReadAllUricAcid" ${key.permissions.canReadAllUricAcid ? 'checked' : ''} style="margin-right: 8px;">
+                                            <span><strong>Alle Harnsäurewerte lesen</strong> (Admin)</span>
+                                        </label>
+                                        <label style="display: flex; align-items: center; cursor: pointer;">
+                                            <input type="checkbox" name="canReadAllMeals" ${key.permissions.canReadAllMeals ? 'checked' : ''} style="margin-right: 8px;">
+                                            <span><strong>Alle Mahlzeiten lesen</strong> (Admin)</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                    <input type="checkbox" name="isActive" ${key.isActive ? 'checked' : ''} style="margin-right: 8px;">
+                                    <span>API-Key ist aktiv</span>
+                                </label>
+                            </div>
+                            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                <button type="button" onclick="closeEditApiKeyForm()" style="padding: 10px 20px; background: #D2D2D7; color: #000000; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Abbrechen</button>
+                                <button type="submit" style="padding: 10px 20px; background: #0066FF; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">Speichern</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', formHTML);
+            
+            document.getElementById('editApiKeyForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(e.target);
+                const data = {
+                    name: formData.get('name'),
+                    description: formData.get('description'),
+                    canReadOwnUricAcid: formData.get('canReadOwnUricAcid') === 'on',
+                    canWriteOwnUricAcid: formData.get('canWriteOwnUricAcid') === 'on',
+                    canReadOwnMeals: formData.get('canReadOwnMeals') === 'on',
+                    canWriteOwnMeals: formData.get('canWriteOwnMeals') === 'on',
+                    canReadAllUricAcid: formData.get('canReadAllUricAcid') === 'on',
+                    canReadAllMeals: formData.get('canReadAllMeals') === 'on',
+                    isActive: formData.get('isActive') === 'on'
+                };
+
+                try {
+                    const response = await fetch(`${API_BASE}/admin/api-keys/${key.id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data),
+                        credentials: 'include'
+                    });
+
+                    const result = await response.json();
+                    if (result.success) {
+                        closeEditApiKeyForm();
+                        alert(`API-Key "${result.data.name}" erfolgreich aktualisiert!`);
+                        loadApiKeys();
+                    } else {
+                        alert(`Fehler: ${result.error}`);
+                    }
+                } catch (error) {
+                    console.error('Error updating API key:', error);
+                    alert(`Fehler: ${error.message}`);
+                }
+            });
+        }
+
+        function closeEditApiKeyForm() {
+            const modal = document.getElementById('editApiKeyFormModal');
+            if (modal) modal.remove();
+        }
+
         async function deleteApiKey(id, name) {
             if (!confirm(`Möchtest du den API-Key "${name}" wirklich löschen?`)) {
                 return;
@@ -1548,6 +1893,371 @@
             }
         }
         
+        // Log Viewer Funktionen
+        let currentLogFile = null;
+        let currentLogOffset = 0;
+        const LOG_PAGE_SIZE = 100;
+
+        async function showUserManagement() {
+            // Lade Benutzerliste
+            await loadUsers();
+        }
+
+        function showUserStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('userManagementStatus');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+        }
+
+        function hideUserStatus() {
+            document.getElementById('userManagementStatus').style.display = 'none';
+        }
+
+        function setUserLoading(loading) {
+            document.getElementById('userManagementLoading').style.display = loading ? 'block' : 'none';
+        }
+
+        function formatUserDate(dateString) {
+            if (!dateString) return '<span style="color: #86868B; font-style: italic;">-</span>';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleString('de-DE', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+
+        function formatBackupDate(dateString) {
+            if (!dateString) return '<span style="color: #86868B; font-style: italic;">Kein Backup</span>';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleString('de-DE', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return dateString;
+            }
+        }
+
+        async function loadUsers() {
+            setUserLoading(true);
+            hideUserStatus();
+            
+            try {
+                const response = await fetch(`${API_BASE}/users`, {
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        alert('Sie müssen als Administrator angemeldet sein.');
+                        window.location.href = '/login.html';
+                        return;
+                    }
+                    throw new Error('Fehler beim Laden der Benutzer: ' + response.statusText);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    displayUsers(data.data);
+                    showUserStatus(`${data.data.length} Benutzer geladen`, 'success');
+                } else {
+                    throw new Error('Ungültige Antwort vom Server');
+                }
+            } catch (error) {
+                showUserStatus('Fehler: ' + error.message, 'error');
+            } finally {
+                setUserLoading(false);
+            }
+        }
+
+        function displayUsers(users) {
+            const tableDiv = document.getElementById('userManagementTable');
+            
+            if (users.length === 0) {
+                tableDiv.innerHTML = '<p style="text-align: center; color: #86868B; padding: 40px;">Keine Benutzer gefunden</p>';
+                return;
+            }
+            
+            let html = `
+                <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #E5E5E7; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #F5F5F7; border-bottom: 1px solid #E5E5E7;">
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">GUID</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Registriert am</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Letztes Backup</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Geschlecht</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Geburtsjahr</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Ist Admin</th>
+                                <th style="padding: 12px; text-align: left; font-weight: 600;">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            users.forEach((user, index) => {
+                const isAdmin = user.isAdmin ? 'Ja' : 'Nein';
+                const adminStyle = user.isAdmin ? 'color: #34C759; font-weight: bold;' : 'color: #86868B;';
+                html += `
+                    <tr style="border-bottom: 1px solid #e0e0e0; ${index % 2 === 0 ? 'background: #fafafa;' : ''}">
+                        <td style="padding: 12px; font-family: \'Courier New\', monospace; font-size: 12px; color: #86868B;">${user.guid || '-'}</td>
+                        <td style="padding: 12px; font-size: 13px; color: #86868B;">${formatUserDate(user.createdAt)}</td>
+                        <td style="padding: 12px; font-size: 13px; color: #86868B;">${formatBackupDate(user.lastBackupTimestamp)}</td>
+                        <td style="padding: 12px;">${user.gender || '-'}</td>
+                        <td style="padding: 12px;">${user.birthYear || '-'}</td>
+                        <td style="padding: 12px; ${adminStyle}">${isAdmin}</td>
+                        <td style="padding: 12px;">
+                            <button onclick="deleteUser('${user.guid}')" style="padding: 6px 12px; background: #FF3B30; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px;">Backup-Daten löschen</button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            tableDiv.innerHTML = html;
+        }
+
+        async function deleteUser(guid) {
+            if (!confirm(`Möchten Sie den Benutzer ${guid} mit ALLEN Daten wirklich löschen?\n\nDies löscht:\n- Alle Harnsäurewerte\n- Alle Mahlzeiten\n- Alle Lebensmittel\n- Den Benutzer-Eintrag selbst\n\nDiese Aktion kann nicht rückgängig gemacht werden!`)) {
+                return;
+            }
+            
+            setUserLoading(true);
+            hideUserStatus();
+            
+            try {
+                const endpoint = `${API_BASE}/users/${guid}/backup-data`;
+                
+                const response = await fetch(endpoint, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        alert('Sie müssen als Administrator angemeldet sein.');
+                        window.location.href = '/login.html';
+                        return;
+                    }
+                    let errorMessage = 'Fehler beim Löschen: ' + response.statusText;
+                    try {
+                        const errorData = await response.json();
+                        if (errorData.error) {
+                            errorMessage += ' - ' + errorData.error;
+                        }
+                    } catch (e) {
+                        // Ignoriere JSON-Parse-Fehler
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showUserStatus(`Benutzer ${guid} und alle Daten erfolgreich gelöscht`, 'success');
+                    // Aktualisiere die Liste
+                    setTimeout(() => {
+                        loadUsers();
+                    }, 1000);
+                } else {
+                    throw new Error(data.error || 'Unbekannter Fehler');
+                }
+            } catch (error) {
+                showUserStatus('Fehler: ' + error.message, 'error');
+            } finally {
+                setUserLoading(false);
+            }
+        }
+
+        async function showLogViewer() {
+            // Lade Log-Dateien-Liste
+            await loadLogFiles();
+        }
+
+        async function loadLogFiles() {
+            try {
+                const response = await fetch(`${API_BASE}/admin/logs/files`, {
+                    credentials: 'include'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    const select = document.getElementById('logFileSelect');
+                    select.innerHTML = '<option value="">-- Datei auswählen --</option>';
+                    
+                    result.files.forEach(file => {
+                        const option = document.createElement('option');
+                        option.value = file.name;
+                        const sizeKB = (file.size / 1024).toFixed(2);
+                        const date = new Date(file.modified).toLocaleString('de-DE');
+                        option.textContent = `${file.name} (${sizeKB} KB, ${date})`;
+                        select.appendChild(option);
+                    });
+                } else {
+                    alert('Fehler beim Laden der Log-Dateien');
+                }
+            } catch (error) {
+                console.error('Error loading log files:', error);
+                alert(`Fehler: ${error.message}`);
+            }
+        }
+
+        async function loadLogFile() {
+            const select = document.getElementById('logFileSelect');
+            const fileName = select.value;
+            
+            if (!fileName) {
+                document.getElementById('logViewerContent').innerHTML = '<p style="text-align: center; color: #86868B; padding: 40px;">Wähle eine Log-Datei aus, um die Einträge anzuzeigen</p>';
+                return;
+            }
+            
+            currentLogFile = fileName;
+            currentLogOffset = 0;
+            await applyFilters();
+        }
+
+        async function applyFilters() {
+            if (!currentLogFile) {
+                return;
+            }
+            
+            const level = document.getElementById('logLevelFilter').value;
+            const search = document.getElementById('logSearchFilter').value;
+            
+            try {
+                const params = new URLSearchParams({
+                    fileName: currentLogFile,
+                    limit: LOG_PAGE_SIZE,
+                    offset: currentLogOffset
+                });
+                
+                if (level) params.append('level', level);
+                if (search) params.append('search', search);
+                
+                const response = await fetch(`${API_BASE}/admin/logs/content?${params}`, {
+                    credentials: 'include'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    displayLogEntries(result.entries, result.total);
+                    updatePaginationButtons(result.total);
+                } else {
+                    alert('Fehler beim Laden der Log-Einträge');
+                }
+            } catch (error) {
+                console.error('Error loading log content:', error);
+                alert(`Fehler: ${error.message}`);
+            }
+        }
+
+        function displayLogEntries(entries, total) {
+            const container = document.getElementById('logViewerContent');
+            const statsDiv = document.getElementById('logViewerStats');
+            
+            if (entries.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #86868B; padding: 40px;">Keine Log-Einträge gefunden</p>';
+                statsDiv.style.display = 'none';
+                return;
+            }
+            
+            statsDiv.style.display = 'block';
+            document.getElementById('logViewerCount').textContent = entries.length;
+            document.getElementById('logViewerTotal').textContent = total;
+            
+            let html = '<div style="font-family: monospace; font-size: 13px;">';
+            
+            entries.forEach(entry => {
+                const level = entry.level || 'info';
+                const timestamp = entry.timestamp || '';
+                const message = entry.message || '';
+                const meta = entry.meta || {};
+                
+                // Level-Farben
+                let levelColor = '#666';
+                let bgColor = '#f5f5f5';
+                if (level === 'error') {
+                    levelColor = '#FF3B30';
+                    bgColor = '#ffebee';
+                } else if (level === 'warn') {
+                    levelColor = '#ff9800';
+                    bgColor = '#fff3e0';
+                } else if (level === 'info') {
+                    levelColor = '#0066FF';
+                    bgColor = '#e3f2fd';
+                } else if (level === 'debug') {
+                    levelColor = '#0066FF';
+                    bgColor = '#f3e5f5';
+                }
+                
+                html += `<div style="padding: 12px; margin-bottom: 8px; border-left: 4px solid ${levelColor}; background: ${bgColor}; border-radius: 4px;">`;
+                html += `<div style="display: flex; gap: 15px; margin-bottom: 5px; flex-wrap: wrap;">`;
+                html += `<span style="font-weight: bold; color: ${levelColor}; text-transform: uppercase;">[${level}]</span>`;
+                html += `<span style="color: #86868B;">${timestamp}</span>`;
+                html += `</div>`;
+                html += `<div style="color: #000000; margin-bottom: 5px;">${escapeHtml(message)}</div>`;
+                
+                if (Object.keys(meta).length > 0) {
+                    html += `<details style="margin-top: 5px;">`;
+                    html += `<summary style="cursor: pointer; color: #0066FF; font-size: 12px;">Details anzeigen</summary>`;
+                    html += `<pre style="margin-top: 5px; padding: 8px; background: #fafafa; border-radius: 4px; overflow-x: auto; font-size: 11px;">${escapeHtml(JSON.stringify(meta, null, 2))}</pre>`;
+                    html += `</details>`;
+                }
+                
+                html += `</div>`;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function updatePaginationButtons(total) {
+            const prevBtn = document.getElementById('prevPageBtn');
+            const nextBtn = document.getElementById('nextPageBtn');
+            
+            prevBtn.disabled = currentLogOffset === 0;
+            nextBtn.disabled = currentLogOffset + LOG_PAGE_SIZE >= total;
+        }
+
+        function loadPreviousPage() {
+            if (currentLogOffset >= LOG_PAGE_SIZE) {
+                currentLogOffset -= LOG_PAGE_SIZE;
+                applyFilters();
+            }
+        }
+
+        function loadNextPage() {
+            currentLogOffset += LOG_PAGE_SIZE;
+            applyFilters();
+        }
+
         // Löscht alle Backup-Daten eines Users (nur in Development)
         async function deleteUserBackupData(userGuid) {
             if (!isDevelopment) {

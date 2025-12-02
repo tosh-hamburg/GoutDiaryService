@@ -75,8 +75,18 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Favicon Route - stillschweigend behandeln, um 404-Warnungen zu vermeiden
+app.get('/favicon.ico', (req, res) => {
+  res.status(204).end(); // 204 No Content - Browser erwartet keine Antwort
+});
+
 // Request Logging
 app.use((req, res, next) => {
+  // Ignoriere Favicon-Requests beim Logging
+  if (req.path === '/favicon.ico') {
+    return next();
+  }
+  
   // Detailliertes Logging für Thumbnail-Uploads
   if (req.path.includes('/thumbnails/')) {
     logger.info('Thumbnail request', {
@@ -238,6 +248,10 @@ app.use((err, req, res, next) => {
 
 // 404 Handler - MUSS als letztes kommen, nach allen Routen und statischen Dateien
 app.use((req, res) => {
+  // Ignoriere Favicon-Requests (sollten bereits von der Route oben behandelt werden)
+  if (req.path === '/favicon.ico') {
+    return res.status(204).end();
+  }
   logger.warn(`404 - Route not found: ${req.method} ${req.path}`);
   // Wenn es eine HTML-Anfrage ist, versuche index.html zu servieren (falls authentifiziert)
   if (req.accepts('html')) {

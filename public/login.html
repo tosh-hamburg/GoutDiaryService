@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anmeldung - Harnsäure Tracker Service</title>
+    <title>Anmeldung - Gicht Tagebuch Service</title>
     <style>
         * {
             margin: 0;
@@ -118,6 +118,11 @@
     </div>
 
     <script>
+        // Im Development-Modus: Weiterleitung zur normalen Anmeldung
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('localhost')) {
+            window.location.href = '/login-dev.html';
+        }
+        
         // Prüfe URL-Parameter für Fehler
         const urlParams = new URLSearchParams(window.location.search);
         const error = urlParams.get('error');
@@ -142,6 +147,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 
