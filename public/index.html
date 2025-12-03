@@ -520,6 +520,16 @@
                 </div>
             </div>
         </div>
+
+        <div id="deduplicateContainer" style="display: none;">
+            <div class="search-section">
+                <h2 style="color: #000000; margin-bottom: 20px;">🔧 Duplikate bereinigen</h2>
+                <div id="deduplicateContent" style="background: white; padding: 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border: 1px solid #E5E5E7; min-height: 600px;">
+                    <iframe id="deduplicateIframe" src="/admin/deduplicate" style="width: 100%; height: 800px; border: none; border-radius: 8px;"></iframe>
+                </div>
+            </div>
+        </div>
+        </div>
     </div>
 
     <script>
@@ -575,6 +585,7 @@
                         <button onclick="showSection('tree'); loadAllData();" style="padding: 8px 16px; background: #0066FF; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Baumansicht</button>
                         ${currentUser.isAdmin ? '<button onclick="showSection(\'apiKeys\'); loadApiKeys();" style="padding: 8px 16px; background: #0066FF; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">API-Keys verwalten</button>' : ''}
                         ${currentUser.isAdmin ? '<button onclick="showSection(\'userManagement\'); showUserManagement();" style="padding: 8px 16px; background: #FF3B30; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Benutzerverwaltung</button>' : ''}
+                        ${currentUser.isAdmin ? '<button onclick="showSection(\'deduplicate\'); showDeduplicate();" style="padding: 8px 16px; background: #FF9500; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Duplikate bereinigen</button>' : ''}
                         ${currentUser.isAdmin ? '<button onclick="showSection(\'logViewer\'); showLogViewer();" style="padding: 8px 16px; background: #0066FF; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Log-Viewer</button>' : ''}
                         <button onclick="logout()" style="padding: 8px 16px; background: #FF3B30; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">Abmelden</button>
                     </div>
@@ -605,6 +616,7 @@
             document.getElementById('loadingContainer').style.display = 'none';
             document.getElementById('logViewerContainer').style.display = 'none';
             document.getElementById('userManagementContainer').style.display = 'none';
+            document.getElementById('deduplicateContainer').style.display = 'none';
             
             // Zeige gewünschten Bereich
             if (sectionName === 'tree') {
@@ -616,6 +628,8 @@
                 document.getElementById('userManagementContainer').style.display = 'block';
             } else if (sectionName === 'logViewer') {
                 document.getElementById('logViewerContainer').style.display = 'block';
+            } else if (sectionName === 'deduplicate') {
+                document.getElementById('deduplicateContainer').style.display = 'block';
             }
         }
 
@@ -2093,6 +2107,11 @@
         async function showLogViewer() {
             // Lade Log-Dateien-Liste
             await loadLogFiles();
+        }
+
+        function showDeduplicate() {
+            // Die Deduplizierungsseite wird bereits im iframe geladen
+            // Diese Funktion kann für zukünftige Initialisierungen verwendet werden
         }
 
         async function loadLogFiles() {

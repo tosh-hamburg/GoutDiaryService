@@ -6,6 +6,21 @@ class FoodItem {
     const db = getDatabase();
     const id = data.id || uuidv4();
     
+    // Prüfe ob FoodItem bereits existiert (über user_id und name, da das der UNIQUE constraint ist)
+    const existing = this.findByUserIdAndName(data.userId, data.name);
+    
+    if (existing && data.updatedAt) {
+      // Wenn FoodItem existiert, vergleiche Zeitstempel
+      const existingTimestamp = existing.updatedAt ? new Date(existing.updatedAt).getTime() : new Date(existing.createdAt).getTime();
+      const newTimestamp = data.updatedAt ? new Date(data.updatedAt).getTime() : new Date().getTime();
+      
+      if (newTimestamp <= existingTimestamp) {
+        // Bestehendes FoodItem ist neuer oder gleich alt, behalte es
+        return existing;
+      }
+      // Sonst: Update durchführen (implizit durch ON CONFLICT)
+    }
+    
     const stmt = db.prepare(`
       INSERT INTO food_items (
         id, user_id, name, purin_per_100g, uric_acid_per_100g,

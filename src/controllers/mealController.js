@@ -32,7 +32,8 @@ exports.create = (req, res, next) => {
       totalCalories: parseInt(req.body.totalCalories) || 0,
       totalProtein: parseFloat(req.body.totalProtein) || 0,
       components: req.body.components || [], // Array of meal components
-      thumbnailPath: req.body.thumbnailPath || null // Relativer Pfad zum Thumbnail (optional)
+      thumbnailPath: req.body.thumbnailPath || null, // Relativer Pfad zum Thumbnail (optional)
+      updatedAt: req.body.updatedAt || null // Zeitstempel für Duplikat-Prüfung
     };
     
     logger.info('Creating meal', {
@@ -155,6 +156,48 @@ exports.getLastTimestamp = (req, res, next) => {
     });
   } catch (error) {
     logger.error('Error fetching last meal timestamp:', error);
+    next(error);
+  }
+};
+
+exports.delete = (req, res, next) => {
+  try {
+    const mealId = req.params.id;
+    const userGuid = req.query.userId || req.body.userId; // userId ist eigentlich die GUID
+    
+    if (!userGuid) {
+      return res.status(400).json({ error: 'userId (GUID) is required' });
+    }
+    
+    // Finde User anhand der GUID
+    const user = User.findByGuid(userGuid);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Prüfe ob Meal existiert und dem User gehört
+    const existingMeal = Meal.findById(mealId);
+    if (!existingMeal) {
+      return res.status(404).json({ error: 'Meal not found' });
+    }
+    
+    if (existingMeal.userId !== user.id) {
+      return res.status(403).json({ error: 'Access denied: Meal belongs to a different user' });
+    }
+    
+    const deleted = Meal.delete(mealId);
+    
+    if (deleted) {
+      logger.info(`Deleted meal ${mealId} for user ${userGuid}`);
+      res.json({
+        success: true,
+        message: 'Meal deleted successfully'
+      });
+    } else {
+      res.status(404).json({ error: 'Meal not found' });
+    }
+  } catch (error) {
+    logger.error('Error deleting meal:', error);
     next(error);
   }
 };

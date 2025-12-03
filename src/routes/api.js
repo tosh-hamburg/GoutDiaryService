@@ -26,6 +26,7 @@ router.post('/uric-acid-values', authenticateApiKey, requirePermission('canWrite
 router.get('/uric-acid-values', authenticateApiKeyOrSession, requirePermission('canReadOwnUricAcid'), uricAcidController.getAll);
 router.get('/uric-acid-values/stats', authenticateApiKeyOrSession, requirePermission('canReadOwnUricAcid'), uricAcidController.getStats);
 router.get('/uric-acid-values/last-timestamp', authenticateApiKey, requirePermission('canReadOwnUricAcid'), uricAcidController.getLastTimestamp);
+router.delete('/uric-acid-values/:id', authenticateApiKey, requirePermission('canWriteOwnUricAcid'), uricAcidController.delete);
 
 // Meals routes (mit API-Key ODER Session-Auth)
 // POST/PUT erfordern API-Key (für App), GET erlaubt auch Session (für Web-UI)
@@ -33,6 +34,7 @@ router.post('/meals', authenticateApiKey, requirePermission('canWriteOwnMeals'),
 router.get('/meals', authenticateApiKeyOrSession, requirePermission('canReadOwnMeals'), mealController.getAll);
 router.get('/meals/stats', authenticateApiKeyOrSession, requirePermission('canReadOwnMeals'), mealController.getDietStats);
 router.get('/meals/last-timestamp', authenticateApiKey, requirePermission('canReadOwnMeals'), mealController.getLastTimestamp);
+router.delete('/meals/:id', authenticateApiKey, requirePermission('canWriteOwnMeals'), mealController.delete);
 
 // Food Items routes (mit API-Key ODER Session-Auth)
 // POST/PUT/DELETE erfordern API-Key (für App), GET erlaubt auch Session (für Web-UI)

@@ -33,7 +33,8 @@ exports.create = (req, res, next) => {
       muchAlcohol: req.body.muchAlcohol || false,
       fasten: req.body.fasten || false,
       goutAttack: req.body.goutAttack || false,
-      notes: req.body.notes || null
+      notes: req.body.notes || null,
+      updatedAt: req.body.updatedAt || null // Zeitstempel für Duplikat-Prüfung
     };
     
     // Validation
@@ -164,6 +165,48 @@ exports.getLastTimestamp = (req, res, next) => {
     });
   } catch (error) {
     logger.error('Error fetching last uric acid timestamp:', error);
+    next(error);
+  }
+};
+
+exports.delete = (req, res, next) => {
+  try {
+    const valueId = req.params.id;
+    const userGuid = req.query.userId || req.body.userId; // userId ist eigentlich die GUID
+    
+    if (!userGuid) {
+      return res.status(400).json({ error: 'userId (GUID) is required' });
+    }
+    
+    // Finde User anhand der GUID
+    const user = User.findByGuid(userGuid);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Prüfe ob UricAcidValue existiert und dem User gehört
+    const existingValue = UricAcidValue.findById(valueId);
+    if (!existingValue) {
+      return res.status(404).json({ error: 'Uric acid value not found' });
+    }
+    
+    if (existingValue.userId !== user.id) {
+      return res.status(403).json({ error: 'Access denied: Uric acid value belongs to a different user' });
+    }
+    
+    const deleted = UricAcidValue.delete(valueId);
+    
+    if (deleted) {
+      logger.info(`Deleted uric acid value ${valueId} for user ${userGuid}`);
+      res.json({
+        success: true,
+        message: 'Uric acid value deleted successfully'
+      });
+    } else {
+      res.status(404).json({ error: 'Uric acid value not found' });
+    }
+  } catch (error) {
+    logger.error('Error deleting uric acid value:', error);
     next(error);
   }
 };

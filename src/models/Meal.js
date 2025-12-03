@@ -7,7 +7,22 @@ class Meal {
     // Verwende vorhandene ID falls vorhanden (für Backup/Update), sonst neue UUID
     const id = data.id || uuidv4();
     
-    // Insert or replace meal (für Backup: überschreibt bestehende Einträge)
+    // Prüfe ob Mahlzeit bereits existiert
+    const existing = this.findById(id);
+    
+    if (existing && data.updatedAt) {
+      // Wenn Mahlzeit existiert, vergleiche Zeitstempel
+      const existingTimestamp = existing.createdAt ? new Date(existing.createdAt).getTime() : 0;
+      const newTimestamp = data.updatedAt ? new Date(data.updatedAt).getTime() : new Date().getTime();
+      
+      if (newTimestamp <= existingTimestamp) {
+        // Bestehende Mahlzeit ist neuer oder gleich alt, behalte sie
+        return existing;
+      }
+      // Sonst: Update durchführen (implizit durch INSERT OR REPLACE)
+    }
+    
+    // Insert or replace meal (nur wenn neuer oder nicht vorhanden)
     const mealStmt = db.prepare(`
       INSERT OR REPLACE INTO meals (
         id, user_id, timestamp, meal_type, name,
@@ -149,6 +164,17 @@ class Meal {
     const stmt = db.prepare('SELECT MAX(timestamp) as lastTimestamp FROM meals WHERE user_id = ?');
     const row = stmt.get(userId);
     return row?.lastTimestamp || null;
+  }
+  
+  static delete(id) {
+    const db = getDatabase();
+    // Lösche zuerst alle Komponenten der Mahlzeit
+    const deleteComponentsStmt = db.prepare('DELETE FROM meal_components WHERE meal_id = ?');
+    deleteComponentsStmt.run(id);
+    // Dann lösche die Mahlzeit selbst
+    const deleteMealStmt = db.prepare('DELETE FROM meals WHERE id = ?');
+    const result = deleteMealStmt.run(id);
+    return result.changes > 0;
   }
   
   static deleteByUserId(userId) {

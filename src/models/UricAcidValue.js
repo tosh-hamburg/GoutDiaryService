@@ -7,7 +7,22 @@ class UricAcidValue {
     // Verwende vorhandene ID falls vorhanden (für Backup/Update), sonst neue UUID
     const id = data.id || uuidv4();
     
-    // Insert or replace (für Backup: überschreibt bestehende Einträge)
+    // Prüfe ob Datensatz bereits existiert
+    const existing = this.findById(id);
+    
+    if (existing && data.updatedAt) {
+      // Wenn Datensatz existiert, vergleiche Zeitstempel
+      const existingTimestamp = existing.createdAt ? new Date(existing.createdAt).getTime() : 0;
+      const newTimestamp = data.updatedAt ? new Date(data.updatedAt).getTime() : new Date().getTime();
+      
+      if (newTimestamp <= existingTimestamp) {
+        // Bestehender Datensatz ist neuer oder gleich alt, behalte ihn
+        return existing;
+      }
+      // Sonst: Update durchführen (implizit durch INSERT OR REPLACE)
+    }
+    
+    // Insert or replace (nur wenn neuer oder nicht vorhanden)
     const stmt = db.prepare(`
       INSERT OR REPLACE INTO uric_acid_values (
         id, user_id, timestamp, value, normal, much_meat, much_sport,
@@ -103,6 +118,13 @@ class UricAcidValue {
     const stmt = db.prepare('SELECT MAX(timestamp) as lastTimestamp FROM uric_acid_values WHERE user_id = ?');
     const row = stmt.get(userId);
     return row?.lastTimestamp || null;
+  }
+  
+  static delete(id) {
+    const db = getDatabase();
+    const stmt = db.prepare('DELETE FROM uric_acid_values WHERE id = ?');
+    const result = stmt.run(id);
+    return result.changes > 0;
   }
   
   static deleteByUserId(userId) {
