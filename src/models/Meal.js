@@ -1,5 +1,8 @@
 const { getDatabase } = require('../database');
 const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
+const path = require('path');
+const logger = require('../utils/logger');
 
 class Meal {
   static create(data) {
@@ -168,9 +171,40 @@ class Meal {
   
   static delete(id) {
     const db = getDatabase();
+    
+    // Hole die Mahlzeit, um den Thumbnail-Pfad zu erhalten
+    const meal = this.findById(id);
+    
+    // Lösche das Thumbnail, falls vorhanden
+    if (meal && meal.thumbnailPath) {
+      try {
+        // Finde die user_id, um den korrekten Pfad zu konstruieren
+        const userStmt = db.prepare('SELECT user_id FROM meals WHERE id = ?');
+        const userRow = userStmt.get(id);
+        
+        if (userRow) {
+          const User = require('./User');
+          const user = User.findById(userRow.user_id);
+          
+          if (user && user.guid) {
+            const thumbnailFullPath = path.join(__dirname, '../../data/thumbnails', user.guid, meal.thumbnailPath);
+            
+            if (fs.existsSync(thumbnailFullPath)) {
+              fs.unlinkSync(thumbnailFullPath);
+              logger.info(`Deleted thumbnail for meal ${id}: ${meal.thumbnailPath}`);
+            }
+          }
+        }
+      } catch (error) {
+        logger.error(`Error deleting thumbnail for meal ${id}:`, error);
+        // Fahre fort mit dem Löschen der Mahlzeit, auch wenn Thumbnail-Löschung fehlschlägt
+      }
+    }
+    
     // Lösche zuerst alle Komponenten der Mahlzeit
     const deleteComponentsStmt = db.prepare('DELETE FROM meal_components WHERE meal_id = ?');
     deleteComponentsStmt.run(id);
+    
     // Dann lösche die Mahlzeit selbst
     const deleteMealStmt = db.prepare('DELETE FROM meals WHERE id = ?');
     const result = deleteMealStmt.run(id);

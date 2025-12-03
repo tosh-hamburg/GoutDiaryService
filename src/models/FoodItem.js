@@ -1,5 +1,8 @@
 const { getDatabase } = require('../database');
 const { v4: uuidv4 } = require('uuid');
+const fs = require('fs');
+const path = require('path');
+const logger = require('../utils/logger');
 
 class FoodItem {
   static create(data) {
@@ -129,6 +132,40 @@ class FoodItem {
   
   static delete(id) {
     const db = getDatabase();
+    
+    // Hole das FoodItem, um die Bild-Pfade zu erhalten
+    const foodItem = this.findById(id);
+    
+    // Lösche die Bilder, falls vorhanden
+    if (foodItem) {
+      try {
+        // Finde die user_id, um den korrekten Pfad zu konstruieren
+        const User = require('./User');
+        const user = User.findById(foodItem.userId);
+        
+        if (user && user.guid) {
+          const imagePaths = [foodItem.imagePath, foodItem.thumbnailPath].filter(p => p); // Entferne null/undefined
+          
+          imagePaths.forEach(imagePath => {
+            try {
+              const imageFullPath = path.join(__dirname, '../../data/thumbnails', user.guid, imagePath);
+              
+              if (fs.existsSync(imageFullPath)) {
+                fs.unlinkSync(imageFullPath);
+                logger.info(`Deleted image for food item ${id}: ${imagePath}`);
+              }
+            } catch (err) {
+              logger.error(`Error deleting image ${imagePath} for food item ${id}:`, err);
+            }
+          });
+        }
+      } catch (error) {
+        logger.error(`Error deleting images for food item ${id}:`, error);
+        // Fahre fort mit dem Löschen des FoodItems, auch wenn Bild-Löschung fehlschlägt
+      }
+    }
+    
+    // Lösche das FoodItem aus der Datenbank
     const stmt = db.prepare('DELETE FROM food_items WHERE id = ?');
     const result = stmt.run(id);
     return result.changes > 0;
