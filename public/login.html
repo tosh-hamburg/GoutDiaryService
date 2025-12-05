@@ -49,6 +49,86 @@
             border-radius: 8px;
             margin-bottom: 20px;
             font-size: 14px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .login-btn:hover {
+            background: #5568d3;
+        }
+
+        .login-btn:active {
+            background: #4457c2;
+        }
+
+        .login-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .divider {
+            margin: 30px 0;
+            text-align: center;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e0e0e0;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 15px;
+            position: relative;
+            color: #999;
+            font-size: 14px;
         }
 
         .google-btn {
@@ -66,6 +146,7 @@
             justify-content: center;
             gap: 10px;
             transition: background 0.3s;
+            text-decoration: none;
         }
 
         .google-btn:hover {
@@ -100,8 +181,29 @@
         <h1>🔐 Anmeldung</h1>
         <p>Harnsäure Tracker Service</p>
 
-        <div id="errorContainer"></div>
+        <div id="errorContainer" class="error-message"></div>
 
+        <!-- Username/Password Login -->
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Benutzername</label>
+                <input type="text" id="username" name="username" required autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label for="password">Passwort</label>
+                <input type="password" id="password" name="password" required autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">Anmelden</button>
+        </form>
+
+        <!-- Divider -->
+        <div class="divider">
+            <span>ODER</span>
+        </div>
+
+        <!-- Google Login -->
         <a href="/auth/google" class="google-btn">
             <svg class="google-icon" viewBox="0 0 24 24">
                 <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -113,22 +215,20 @@
         </a>
 
         <div class="info-box">
-            <strong>Hinweis:</strong> Die Anmeldung erfolgt ausschließlich über einen Google-Account. Der erste Benutzer nach der Installation wird automatisch zum Super-Admin.
+            <strong>Hinweis:</strong> Du kannst dich mit deinem Benutzernamen/Passwort oder mit deinem Google-Account anmelden. Der erste Benutzer nach der Installation wird automatisch zum Super-Admin.
         </div>
     </div>
 
     <script>
-        // Im Development-Modus: Weiterleitung zur normalen Anmeldung
-        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.includes('localhost')) {
-            window.location.href = '/login-dev.html';
-        }
-        
+        const form = document.getElementById('loginForm');
+        const errorContainer = document.getElementById('errorContainer');
+        const loginBtn = document.getElementById('loginBtn');
+
         // Prüfe URL-Parameter für Fehler
         const urlParams = new URLSearchParams(window.location.search);
         const error = urlParams.get('error');
         
         if (error) {
-            const errorContainer = document.getElementById('errorContainer');
             let errorMessage = '';
             
             switch(error) {
@@ -138,20 +238,66 @@
                 case 'server_error':
                     errorMessage = 'Ein Serverfehler ist aufgetreten. Bitte versuche es später erneut.';
                     break;
+                case 'session_error':
+                    errorMessage = 'Fehler beim Speichern der Sitzung. Bitte versuche es erneut.';
+                    break;
                 default:
                     errorMessage = 'Ein Fehler ist aufgetreten. Bitte versuche es erneut.';
             }
             
-            errorContainer.innerHTML = `<div class="error-message">${errorMessage}</div>`;
+            showError(errorMessage);
         }
+
+        function showError(message) {
+            errorContainer.textContent = message;
+            errorContainer.classList.add('show');
+        }
+
+        function hideError() {
+            errorContainer.classList.remove('show');
+        }
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            hideError();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Anmelden...';
+
+            try {
+                const response = await fetch('/auth/local', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Weiterleitung zur Hauptseite
+                    if (data.redirect) {
+                        window.location.href = data.redirect;
+                    } else {
+                        window.location.href = '/?login=success';
+                    }
+                } else {
+                    showError(data.error || 'Anmeldung fehlgeschlagen');
+                    loginBtn.disabled = false;
+                    loginBtn.textContent = 'Anmelden';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('Ein Fehler ist aufgetreten. Bitte versuche es erneut.');
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Anmelden';
+            }
+        });
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-

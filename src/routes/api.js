@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const logger = require('../utils/logger');
 const uricAcidController = require('../controllers/uricAcidController');
 const mealController = require('../controllers/mealController');
 const foodItemController = require('../controllers/foodItemController');
@@ -63,6 +64,36 @@ router.get('/admin/users/guids', authenticateApiKey, userController.getAllGuids)
 router.delete('/users/delete-all', authenticateApiKey, requirePermission('canWriteOwnUricAcid'), userController.deleteAllUserData);
 // Admin-Route: Löschen aller Backup-Daten eines Users (auch im Production-Modus)
 router.delete('/users/:guid/backup-data', requireAdmin, userController.deleteAllUserData);
+
+// Gemini API Key route (mit API-Key-Authentifizierung)
+router.get('/gemini-api-key', authenticateApiKey, (req, res, next) => {
+  try {
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    
+    if (!geminiApiKey || geminiApiKey.trim() === '') {
+      logger.warn('GEMINI_API_KEY not configured in environment');
+      return res.status(500).json({
+        success: false,
+        error: 'Gemini API key not configured on server'
+      });
+    }
+    
+    logger.info(`Gemini API key requested by API key: ${req.apiKey?.name || 'unknown'}`);
+    
+    res.json({
+      success: true,
+      data: {
+        apiKey: geminiApiKey
+      }
+    });
+  } catch (error) {
+    logger.error('Error getting Gemini API key:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Internal server error'
+    });
+  }
+});
 
 // Thumbnail routes (mit API-Key)
 router.post('/thumbnails/meals', authenticateApiKey, requirePermission('canWriteOwnMeals'), thumbnailController.uploadMealThumbnail);

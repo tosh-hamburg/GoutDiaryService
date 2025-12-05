@@ -90,42 +90,40 @@ passport.serializeUser((user, done) => {
   done(null, user.id);
 });
 
-// Local Strategy für Development
+// Local Strategy (jetzt auch im Production-Modus verfügbar)
 const isDevelopment = process.env.NODE_ENV === 'development';
-if (isDevelopment) {
-  passport.use(new LocalStrategy(
-    {
-      usernameField: 'username',
-      passwordField: 'password'
-    },
-    async (username, password, done) => {
-      try {
-        const user = User.findByUsername(username);
-        if (!user) {
-          logger.warn(`Local login failed: user not found: ${username}`);
-          return done(null, false, { message: 'Ungültiger Benutzername oder Passwort' });
-        }
-        
-        // Prüfe ob Benutzer überhaupt ein Passwort hat (GUID-Benutzer haben keins)
-        if (!user.passwordHash) {
-          logger.warn(`Local login failed: user ${username} has no password (GUID-only user)`);
-          return done(null, false, { message: 'Ungültiger Benutzername oder Passwort' });
-        }
-        
-        if (!User.verifyPassword(user, password)) {
-          logger.warn(`Local login failed: invalid password for user: ${username}`);
-          return done(null, false, { message: 'Ungültiger Benutzername oder Passwort' });
-        }
-        
-        logger.info(`Local login successful: ${username} (Admin: ${user.isAdmin})`);
-        return done(null, user);
-      } catch (error) {
-        logger.error('Error in local strategy:', error);
-        return done(error, null);
+passport.use(new LocalStrategy(
+  {
+    usernameField: 'username',
+    passwordField: 'password'
+  },
+  async (username, password, done) => {
+    try {
+      const user = User.findByUsername(username);
+      if (!user) {
+        logger.warn(`Local login failed: user not found: ${username}`);
+        return done(null, false, { message: 'Ungültiger Benutzername oder Passwort' });
       }
+      
+      // Prüfe ob Benutzer überhaupt ein Passwort hat (GUID-Benutzer haben keins)
+      if (!user.passwordHash) {
+        logger.warn(`Local login failed: user ${username} has no password (GUID-only user)`);
+        return done(null, false, { message: 'Ungültiger Benutzername oder Passwort' });
+      }
+      
+      if (!User.verifyPassword(user, password)) {
+        logger.warn(`Local login failed: invalid password for user: ${username}`);
+        return done(null, false, { message: 'Ungültiger Benutzername oder Passwort' });
+      }
+      
+      logger.info(`Local login successful: ${username} (Admin: ${user.isAdmin}, Mode: ${isDevelopment ? 'dev' : 'prod'})`);
+      return done(null, user);
+    } catch (error) {
+      logger.error('Error in local strategy:', error);
+      return done(error, null);
     }
-  ));
-}
+  }
+));
 
 passport.deserializeUser((id, done) => {
   try {

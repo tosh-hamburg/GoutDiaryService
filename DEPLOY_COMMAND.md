@@ -50,3 +50,9 @@ gcloud run deploy gichttagebuchservice --source . --flags-file=env-vars.yaml
 
 
 
+
+
+
+
+
+

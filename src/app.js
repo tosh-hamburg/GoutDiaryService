@@ -48,6 +48,31 @@ app.use(cors({
   credentials: true
 }));
 
+// Content Security Policy - Verhindert Mixed Content
+app.use((req, res, next) => {
+  // Nur HTTPS-Ressourcen erlauben (verhindert Mixed Content)
+  res.setHeader(
+    'Content-Security-Policy',
+    "default-src 'self' https:; " +
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
+    "font-src 'self' https://fonts.gstatic.com; " +
+    "img-src 'self' data: https:; " +
+    "connect-src 'self' https:; " +
+    "frame-ancestors 'none';"
+  );
+  
+  // Upgrade-Insecure-Requests: Automatisch HTTP zu HTTPS upgraden
+  res.setHeader('Upgrade-Insecure-Requests', '1');
+  
+  // Strict Transport Security (HSTS) - Nur HTTPS erlauben
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  
+  next();
+});
+
 // Body-Parsing Middleware
 // Express.json() und express.urlencoded() sollten multipart/form-data automatisch ignorieren
 // Multer wird in den Routes als Middleware verwendet und verarbeitet multipart/form-data

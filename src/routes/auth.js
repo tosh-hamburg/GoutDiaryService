@@ -77,38 +77,36 @@ if (isOAuthConfigured) {
   });
 }
 
-// Local login für Development
-if (isDevelopment) {
-  router.post('/local', (req, res, next) => {
-    passport.authenticate('local', (err, user, info) => {
+// Local login (jetzt auch im Production-Modus verfügbar)
+router.post('/local', (req, res, next) => {
+  passport.authenticate('local', (err, user, info) => {
+    if (err) {
+      logger.error('Local authentication error:', err);
+      return res.status(500).json({ success: false, error: 'Server error' });
+    }
+    if (!user) {
+      return res.status(401).json({ success: false, error: info?.message || 'Ungültiger Benutzername oder Passwort' });
+    }
+    req.logIn(user, (err) => {
       if (err) {
-        logger.error('Local authentication error:', err);
-        return res.status(500).json({ success: false, error: 'Server error' });
+        logger.error('Login error:', err);
+        return res.status(500).json({ success: false, error: 'Login failed' });
       }
-      if (!user) {
-        return res.status(401).json({ success: false, error: info?.message || 'Ungültiger Benutzername oder Passwort' });
-      }
-      req.logIn(user, (err) => {
-        if (err) {
-          logger.error('Login error:', err);
-          return res.status(500).json({ success: false, error: 'Login failed' });
+      logger.info(`Local login successful: ${user.username || user.email} (Development: ${isDevelopment})`);
+      return res.json({
+        success: true,
+        redirect: '/',
+        data: {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          isAdmin: user.isAdmin,
+          guid: user.guid
         }
-        logger.info(`Local login successful: ${user.username || user.email}`);
-        return res.json({
-          success: true,
-          redirect: '/',
-          data: {
-            id: user.id,
-            email: user.email,
-            username: user.username,
-            isAdmin: user.isAdmin,
-            guid: user.guid
-          }
-        });
       });
-    })(req, res, next);
-  });
-}
+    });
+  })(req, res, next);
+});
 
 // Logout
 router.post('/logout', authController.logout);
