@@ -62,15 +62,30 @@ class Meal {
       
       for (const component of data.components) {
         const componentId = component.id || uuidv4();
+        // Stelle sicher, dass numerische Werte auch wirklich Zahlen sind (nicht Boolean oder String)
+        // Konvertiere explizit zu Zahlen, um sicherzustellen, dass keine Boolean-Werte oder Strings übergeben werden
+        const estimatedWeight = Number(component.estimatedWeight) || 0;
+        const purin = Number(component.purin) || 0;
+        const uricAcid = Number(component.uricAcid) || 0;
+        const calories = Number(component.calories) || 0;
+        const protein = Number(component.protein) || 0;
+        
+        // Unterstütze sowohl foodItemName als auch name (für Rückwärtskompatibilität)
+        const foodItemName = component.foodItemName || component.name || '';
+        
+        if (!foodItemName) {
+          throw new Error('foodItemName is required for meal components');
+        }
+        
         await componentStmt.run(
           componentId,
           id,
-          component.foodItemName,
-          component.estimatedWeight || 0,
-          component.purin || 0,
-          component.uricAcid || 0,
-          component.calories || 0,
-          component.protein || 0
+          foodItemName,
+          estimatedWeight,
+          purin,
+          uricAcid,
+          calories,
+          protein
         );
       }
     }

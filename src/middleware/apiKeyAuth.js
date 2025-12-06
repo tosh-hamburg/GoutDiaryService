@@ -5,7 +5,7 @@ const logger = require('../utils/logger');
  * Middleware zur Authentifizierung mit API-Key
  * Erwartet den API-Key im Header: X-API-Key
  */
-exports.authenticateApiKey = (req, res, next) => {
+exports.authenticateApiKey = async (req, res, next) => {
   try {
     // Logge Request-Details für Thumbnail-Uploads
     if (req.path.includes('/thumbnails/')) {
@@ -36,7 +36,7 @@ exports.authenticateApiKey = (req, res, next) => {
     }
 
     // Finde API-Key in der Datenbank
-    const keyRecord = ApiKey.findByKey(apiKey);
+    const keyRecord = await ApiKey.findByKey(apiKey);
     
     if (!keyRecord) {
       logger.warn(`Invalid API key attempted: ${apiKey.substring(0, 10)}...`);
@@ -55,7 +55,7 @@ exports.authenticateApiKey = (req, res, next) => {
     }
 
     // Aktualisiere letzte Verwendung
-    ApiKey.updateLastUsed(keyRecord.id);
+    await ApiKey.updateLastUsed(keyRecord.id);
 
     // Füge API-Key-Info zum Request hinzu
     req.apiKey = keyRecord;
@@ -74,14 +74,14 @@ exports.authenticateApiKey = (req, res, next) => {
  * Kombinierte Authentifizierung: API-Key ODER Session (für Web-UI)
  * Erlaubt sowohl API-Key-Authentifizierung (für App) als auch Session-Authentifizierung (für Web-UI)
  */
-exports.authenticateApiKeyOrSession = (req, res, next) => {
+exports.authenticateApiKeyOrSession = async (req, res, next) => {
   // Prüfe zuerst auf API-Key
   const apiKey = req.headers['x-api-key'] || req.headers['X-API-Key'];
   
   if (apiKey) {
     // API-Key-Authentifizierung
     try {
-      const keyRecord = ApiKey.findByKey(apiKey);
+      const keyRecord = await ApiKey.findByKey(apiKey);
       
       if (!keyRecord) {
         logger.warn(`Invalid API key attempted: ${apiKey.substring(0, 10)}...`);
@@ -99,7 +99,7 @@ exports.authenticateApiKeyOrSession = (req, res, next) => {
         });
       }
 
-      ApiKey.updateLastUsed(keyRecord.id);
+      await ApiKey.updateLastUsed(keyRecord.id);
       req.apiKey = keyRecord;
       return next();
     } catch (error) {

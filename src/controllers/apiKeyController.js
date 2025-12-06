@@ -4,7 +4,7 @@ const logger = require('../utils/logger');
 /**
  * Erstellt einen neuen API-Key
  */
-exports.create = (req, res) => {
+exports.create = async (req, res, next) => {
   try {
     const {
       name,
@@ -36,7 +36,7 @@ exports.create = (req, res) => {
       });
     }
 
-    const apiKey = ApiKey.create({
+    const apiKey = await ApiKey.create({
       name: name.trim(),
       description: description ? description.trim() : null,
       canReadOwnUricAcid,
@@ -117,10 +117,10 @@ exports.getAll = async (req, res) => {
 /**
  * Gibt einen einzelnen API-Key zurück
  */
-exports.getById = (req, res) => {
+exports.getById = async (req, res) => {
   try {
     const { id } = req.params;
-    const apiKey = ApiKey.findById(id);
+    const apiKey = await ApiKey.findById(id);
     
     if (!apiKey) {
       return res.status(404).json({
@@ -160,7 +160,7 @@ exports.getById = (req, res) => {
 /**
  * Erstellt einen API-Key mit einem vorgegebenen Key-Wert (manuelles Hinzufügen)
  */
-exports.createWithKey = (req, res) => {
+exports.createWithKey = async (req, res) => {
   try {
     const {
       key,
@@ -200,7 +200,7 @@ exports.createWithKey = (req, res) => {
       });
     }
 
-    const apiKey = ApiKey.createWithKey({
+    const apiKey = await ApiKey.createWithKey({
       key: key.trim(),
       name: name.trim(),
       description: description ? description.trim() : null,
@@ -247,10 +247,10 @@ exports.createWithKey = (req, res) => {
 /**
  * Aktualisiert einen API-Key
  */
-exports.update = (req, res) => {
+exports.update = async (req, res) => {
   try {
     const { id } = req.params;
-    const apiKey = ApiKey.findById(id);
+    const apiKey = await ApiKey.findById(id);
     
     if (!apiKey) {
       return res.status(404).json({
@@ -290,7 +290,7 @@ exports.update = (req, res) => {
       });
     }
 
-    const updatedKey = ApiKey.update(id, {
+    const updatedKey = await ApiKey.update(id, {
       name: name.trim(),
       description: description ? description.trim() : null,
       canReadOwnUricAcid,
@@ -335,10 +335,10 @@ exports.update = (req, res) => {
 /**
  * Löscht einen API-Key (soft delete)
  */
-exports.delete = (req, res) => {
+exports.delete = async (req, res) => {
   try {
     const { id } = req.params;
-    const apiKey = ApiKey.findById(id);
+    const apiKey = await ApiKey.findById(id);
     
     if (!apiKey) {
       return res.status(404).json({
@@ -347,7 +347,7 @@ exports.delete = (req, res) => {
       });
     }
 
-    ApiKey.delete(id);
+    await ApiKey.delete(id);
     logger.info(`API Key deleted: ${apiKey.name} (ID: ${id})`);
 
     res.json({

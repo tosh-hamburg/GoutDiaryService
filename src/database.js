@@ -451,37 +451,148 @@ function getDatabase() {
 
     // For PostgreSQL, create a SQLite-compatible wrapper
     if (dbInstance.type === 'postgres') {
+      // Hilfsfunktion zur Transformation von SQLite-SQL zu PostgreSQL-SQL
+      const transformSqlForPostgres = (sql, params) => {
+        let pgSql = sql;
+        let paramIndex = 1;
+        
+        // Konvertiere INSERT OR REPLACE zu INSERT ... ON CONFLICT ... DO UPDATE
+        // PostgreSQL unterstützt kein INSERT OR REPLACE
+        // WICHTIG: Muss VOR der Platzhalter-Konvertierung passieren!
+        const insertOrReplaceRegex = /INSERT\s+OR\s+REPLACE\s+INTO\s+(\w+)\s*\(([^)]+)\)\s*VALUES\s*\(([^)]+)\)/i;
+        const match = pgSql.match(insertOrReplaceRegex);
+        if (match) {
+          const tableName = match[1];
+          const columns = match[2].split(',').map(c => c.trim());
+          const valuesPlaceholders = match[3]; // Enthält noch ? Platzhalter
+          
+          // Finde die ID-Spalte (normalerweise die erste Spalte oder eine Spalte namens 'id')
+          const idColumn = columns.find(col => col.toLowerCase() === 'id') || columns[0];
+          
+          // Zähle die Platzhalter in den VALUES
+          const placeholderCount = (valuesPlaceholders.match(/\?/g) || []).length;
+          
+          // Erstelle UPDATE-Klausel für alle Spalten außer der ID
+          const updateClause = columns
+            .filter(col => col.toLowerCase() !== idColumn.toLowerCase())
+            .map(col => `${col} = EXCLUDED.${col}`)
+            .join(', ');
+          
+          // Erstelle neue VALUES-Klausel mit PostgreSQL-Platzhaltern
+          const newValues = valuesPlaceholders.replace(/\?/g, () => {
+            const currentIndex = paramIndex;
+            paramIndex++;
+            return `$${currentIndex}`;
+          });
+          
+          // Ersetze INSERT OR REPLACE durch INSERT ... ON CONFLICT
+          pgSql = `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${newValues}) ON CONFLICT (${idColumn}) DO UPDATE SET ${updateClause}`;
+        } else {
+          // Konvertiere Platzhalter ? zu $1, $2, etc. (nur wenn nicht bereits durch INSERT OR REPLACE behandelt)
+          pgSql = pgSql.replace(/\?/g, () => `$${paramIndex++}`);
+        }
+        
+        // Konvertiere Boolean-Vergleiche in WHERE-Klauseln: is_active = 1 -> is_active = TRUE
+        const booleanFields = [
+          'is_active', 'is_admin', 'normal', 'much_meat', 'much_sport',
+          'much_sugar', 'much_alcohol', 'fasten', 'gout_attack'
+        ];
+        
+        booleanFields.forEach(field => {
+          // Ersetze field = 1 durch field = TRUE (in WHERE-Klauseln und CASE WHEN)
+          const regex1a = new RegExp(`\\b${field}\\s*=\\s*1\\b`, 'gi');
+          pgSql = pgSql.replace(regex1a, `${field} = TRUE`);
+          
+          // Ersetze field = 0 durch field = FALSE (in WHERE-Klauseln und CASE WHEN)
+          const regex0 = new RegExp(`\\b${field}\\s*=\\s*0\\b`, 'gi');
+          pgSql = pgSql.replace(regex0, `${field} = FALSE`);
+          
+          // Ersetze CASE WHEN field THEN ... durch CASE WHEN field = TRUE THEN ...
+          // (für PostgreSQL, da Boolean-Felder explizit verglichen werden müssen)
+          const caseWhenRegex = new RegExp(`CASE\\s+WHEN\\s+${field}(?!\\s*[=<>])`, 'gi');
+          pgSql = pgSql.replace(caseWhenRegex, `CASE WHEN ${field} = TRUE`);
+        });
+        
+        // Debug: Logge die transformierte SQL bei Bedarf
+        if (process.env.DEBUG_SQL) {
+          logger.debug(`SQL transformed: ${sql.substring(0, 100)}... -> ${pgSql.substring(0, 100)}...`);
+        }
+        
+        // Konvertiere Parameter-Werte für Boolean-Felder
+        // WICHTIG: Nur für bekannte Boolean-Spalten konvertieren, nicht für alle!
+        // Die Konvertierung muss vorsichtig sein, da wir nicht wissen, welche Spalte welcher Parameter ist.
+        // Daher konvertieren wir nur, wenn wir sicher sind, dass es sich um eine Boolean-Spalte handelt.
+        // Für Integer-Spalten (z.B. in meal_components) müssen wir Zahlen behalten.
+        const transformedParams = params.map((param, index) => {
+          // Prüfe ob es sich um ein INSERT oder UPDATE Statement handelt
+          const isInsertOrUpdate = /^\s*(INSERT|UPDATE)/i.test(sql);
+          
+          if (isInsertOrUpdate) {
+            // Nur konvertieren, wenn der Parameter explizit 1 oder 0 ist UND
+            // die SQL-Query auf eine bekannte Boolean-Spalte verweist
+            // Dies ist eine heuristische Lösung - idealerweise sollten die Modelle die Werte korrekt konvertieren
+            // Prüfe ob die SQL-Query Boolean-Spalten enthält
+            const hasBooleanFields = booleanFields.some(field => {
+              // Prüfe ob die Spalte in der INSERT/UPDATE-Liste vorkommt
+              const columnListMatch = pgSql.match(/\(([^)]+)\)/);
+              if (columnListMatch) {
+                const columns = columnListMatch[1].split(',').map(c => c.trim());
+                return columns.includes(field);
+              }
+              return false;
+            });
+            
+            // Nur konvertieren, wenn Boolean-Spalten vorhanden sind UND der Parameter 1 oder 0 ist
+            // Aber nicht für Integer-Spalten (z.B. meal_components)
+            if (hasBooleanFields && (param === 1 || param === 0)) {
+              // Prüfe ob es sich um eine meal_components Tabelle handelt (Integer-Spalten)
+              if (pgSql.includes('meal_components')) {
+                // Für meal_components: Behalte Zahlen als Zahlen
+                return param;
+              }
+              // Für andere Tabellen mit Boolean-Spalten: Konvertiere zu Boolean
+              return param === 1 ? true : false;
+            }
+            
+            // Konvertiere String "false"/"true" zu Boolean (falls vorhanden)
+            if (param === 'true' || param === '1') {
+              return true;
+            }
+            if (param === 'false' || param === '0') {
+              return false;
+            }
+          }
+          
+          return param;
+        });
+        
+        return { sql: pgSql, params: transformedParams };
+      };
+      
       return {
         prepare: (sql) => {
           return {
             get: async (...params) => {
-              let pgSql = sql;
-              let paramIndex = 1;
-              pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
-
-              const result = await dbInstance.query(pgSql, params);
+              const transformed = transformSqlForPostgres(sql, params);
+              const result = await dbInstance.query(transformed.sql, transformed.params);
               return result.rows && result.rows.length > 0 ? result.rows[0] : null;
             },
             all: async (...params) => {
-              let pgSql = sql;
-              let paramIndex = 1;
-              pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
-
-              const result = await dbInstance.query(pgSql, params);
+              const transformed = transformSqlForPostgres(sql, params);
+              const result = await dbInstance.query(transformed.sql, transformed.params);
               return result.rows || [];
             },
             run: async (...params) => {
-              let pgSql = sql;
-              let paramIndex = 1;
-              pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
-
+              const transformed = transformSqlForPostgres(sql, params);
+              let pgSql = transformed.sql;
+              
               if (sql.trim().toUpperCase().startsWith('INSERT')) {
                 if (!pgSql.includes('RETURNING')) {
                   pgSql += ' RETURNING id';
                 }
               }
 
-              const result = await dbInstance.query(pgSql, params);
+              const result = await dbInstance.query(pgSql, transformed.params);
               return {
                 changes: result.rowCount || 0,
                 lastInsertRowid: result.rows && result.rows.length > 0 ? result.rows[0].id : null

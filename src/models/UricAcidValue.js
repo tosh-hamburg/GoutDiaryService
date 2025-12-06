@@ -92,13 +92,15 @@ class UricAcidValue {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     
+    // Die SQL-Transformation konvertiert gout_attack = 1 zu gout_attack = TRUE für PostgreSQL
+    // und CASE WHEN gout_attack zu CASE WHEN gout_attack = TRUE
     const stmt = db.prepare(`
       SELECT
         COUNT(*) as count,
         AVG(value) as average,
         MIN(value) as min,
         MAX(value) as max,
-        COUNT(CASE WHEN gout_attack THEN 1 END) as gout_attacks
+        COUNT(CASE WHEN gout_attack = 1 THEN 1 END) as gout_attacks
       FROM uric_acid_values
       WHERE user_id = ? AND timestamp >= ?
     `);
@@ -135,18 +137,26 @@ class UricAcidValue {
   }
   
   static mapRow(row) {
+    // Helper function to convert database boolean to JavaScript boolean
+    // Handles both SQLite (0/1) and PostgreSQL (true/false) representations
+    const toBoolean = (value) => {
+      if (value === true || value === 1 || value === '1' || value === 'true') return true;
+      if (value === false || value === 0 || value === '0' || value === 'false') return false;
+      return Boolean(value);
+    };
+    
     return {
       id: row.id,
       userId: row.user_id,
       timestamp: row.timestamp,
       value: parseFloat(row.value),
-      normal: row.normal === 1,
-      muchMeat: row.much_meat === 1,
-      muchSport: row.much_sport === 1,
-      muchSugar: row.much_sugar === 1,
-      muchAlcohol: row.much_alcohol === 1,
-      fasten: row.fasten === 1,
-      goutAttack: row.gout_attack === 1,
+      normal: toBoolean(row.normal),
+      muchMeat: toBoolean(row.much_meat),
+      muchSport: toBoolean(row.much_sport),
+      muchSugar: toBoolean(row.much_sugar),
+      muchAlcohol: toBoolean(row.much_alcohol),
+      fasten: toBoolean(row.fasten),
+      goutAttack: toBoolean(row.gout_attack),
       notes: row.notes,
       createdAt: row.created_at
     };

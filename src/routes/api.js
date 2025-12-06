@@ -107,29 +107,44 @@ router.get('/admin/logs/files', requireAdmin, (req, res, next) => {
     const path = require('path');
     const logsDir = path.join(__dirname, '../../logs');
     
+    logger.info(`Loading log files from: ${logsDir}`);
+    
     if (!fs.existsSync(logsDir)) {
+      logger.warn(`Logs directory does not exist: ${logsDir}`);
       return res.json({ success: true, files: [] });
     }
     
     const files = fs.readdirSync(logsDir)
       .filter(file => file.endsWith('.log') || file.endsWith('.log.gz'))
       .map(file => {
-        const filePath = path.join(logsDir, file);
-        const stats = fs.statSync(filePath);
-        return {
-          name: file,
-          size: stats.size,
-          modified: stats.mtime,
-          type: file.includes('exceptions') ? 'exceptions' : 
-                file.includes('rejections') ? 'rejections' : 
-                'application'
-        };
+        try {
+          const filePath = path.join(logsDir, file);
+          const stats = fs.statSync(filePath);
+          return {
+            name: file,
+            size: stats.size,
+            modified: stats.mtime,
+            type: file.includes('exceptions') ? 'exceptions' : 
+                  file.includes('rejections') ? 'rejections' : 
+                  'application'
+          };
+        } catch (err) {
+          logger.error(`Error reading file ${file}:`, err);
+          return null;
+        }
       })
+      .filter(file => file !== null)
       .sort((a, b) => b.modified - a.modified);
     
+    logger.info(`Found ${files.length} log files`);
     res.json({ success: true, files });
   } catch (error) {
-    next(error);
+    logger.error('Error loading log files:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Failed to load log files',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
@@ -147,23 +162,39 @@ router.get('/admin/logs/content', requireAdmin, (req, res, next) => {
     const logsDir = path.join(__dirname, '../../logs');
     const filePath = path.join(logsDir, fileName);
     
+    logger.info(`Loading log content from: ${filePath}`);
+    
     // Sicherheitsprüfung: Nur Dateien im logs-Verzeichnis erlauben
-    if (!filePath.startsWith(logsDir)) {
+    // Normalisiere die Pfade, um Path-Traversal-Angriffe zu verhindern
+    const normalizedLogsDir = path.normalize(logsDir);
+    const normalizedFilePath = path.normalize(filePath);
+    
+    if (!normalizedFilePath.startsWith(normalizedLogsDir)) {
+      logger.warn(`Invalid file path attempt: ${filePath}`);
       return res.status(400).json({ success: false, error: 'Invalid file path' });
     }
     
-    if (!fs.existsSync(filePath)) {
+    if (!fs.existsSync(normalizedFilePath)) {
+      logger.warn(`Log file not found: ${normalizedFilePath}`);
       return res.status(404).json({ success: false, error: 'File not found' });
     }
     
     let content = '';
-    if (fileName.endsWith('.gz')) {
-      // Komprimierte Datei
-      const compressed = fs.readFileSync(filePath);
-      content = zlib.gunzipSync(compressed).toString('utf-8');
-    } else {
-      // Normale Datei
-      content = fs.readFileSync(filePath, 'utf-8');
+    try {
+      if (fileName.endsWith('.gz')) {
+        // Komprimierte Datei
+        const compressed = fs.readFileSync(normalizedFilePath);
+        content = zlib.gunzipSync(compressed).toString('utf-8');
+      } else {
+        // Normale Datei
+        content = fs.readFileSync(normalizedFilePath, 'utf-8');
+      }
+    } catch (readError) {
+      logger.error(`Error reading log file ${normalizedFilePath}:`, readError);
+      return res.status(500).json({ 
+        success: false, 
+        error: `Failed to read log file: ${readError.message}` 
+      });
     }
     
     // Parse JSON-Logs (jede Zeile ist ein JSON-Objekt)
@@ -205,6 +236,7 @@ router.get('/admin/logs/content', requireAdmin, (req, res, next) => {
     const total = entries.length;
     const paginatedEntries = entries.slice(parseInt(offset), parseInt(offset) + parseInt(limit));
     
+    logger.info(`Returning ${paginatedEntries.length} log entries (total: ${total})`);
     res.json({
       success: true,
       entries: paginatedEntries,
@@ -213,7 +245,12 @@ router.get('/admin/logs/content', requireAdmin, (req, res, next) => {
       offset: parseInt(offset)
     });
   } catch (error) {
-    next(error);
+    logger.error('Error loading log content:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message || 'Failed to load log content',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 router.delete('/thumbnails/:userGuid/:thumbnailPath(*)', authenticateApiKey, requirePermission('canWriteOwnMeals'), thumbnailController.deleteThumbnail);

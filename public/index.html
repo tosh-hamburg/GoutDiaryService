@@ -2119,26 +2119,43 @@
                 const response = await fetch(`${API_BASE}/admin/logs/files`, {
                     credentials: 'include'
                 });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.error || errorMessage;
+                    } catch (e) {
+                        errorMessage = errorText || errorMessage;
+                    }
+                    throw new Error(errorMessage);
+                }
+                
                 const result = await response.json();
                 
                 if (result.success) {
                     const select = document.getElementById('logFileSelect');
                     select.innerHTML = '<option value="">-- Datei auswählen --</option>';
                     
-                    result.files.forEach(file => {
-                        const option = document.createElement('option');
-                        option.value = file.name;
-                        const sizeKB = (file.size / 1024).toFixed(2);
-                        const date = new Date(file.modified).toLocaleString('de-DE');
-                        option.textContent = `${file.name} (${sizeKB} KB, ${date})`;
-                        select.appendChild(option);
-                    });
+                    if (result.files && result.files.length > 0) {
+                        result.files.forEach(file => {
+                            const option = document.createElement('option');
+                            option.value = file.name;
+                            const sizeKB = (file.size / 1024).toFixed(2);
+                            const date = new Date(file.modified).toLocaleString('de-DE');
+                            option.textContent = `${file.name} (${sizeKB} KB, ${date})`;
+                            select.appendChild(option);
+                        });
+                    } else {
+                        select.innerHTML = '<option value="">-- Keine Log-Dateien gefunden --</option>';
+                    }
                 } else {
-                    alert('Fehler beim Laden der Log-Dateien');
+                    throw new Error(result.error || 'Fehler beim Laden der Log-Dateien');
                 }
             } catch (error) {
                 console.error('Error loading log files:', error);
-                alert(`Fehler: ${error.message}`);
+                alert(`Fehler beim Laden der Log-Dateien: ${error.message}`);
             }
         }
 
@@ -2177,17 +2194,32 @@
                 const response = await fetch(`${API_BASE}/admin/logs/content?${params}`, {
                     credentials: 'include'
                 });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.error || errorMessage;
+                    } catch (e) {
+                        errorMessage = errorText || errorMessage;
+                    }
+                    throw new Error(errorMessage);
+                }
+                
                 const result = await response.json();
                 
                 if (result.success) {
                     displayLogEntries(result.entries, result.total);
                     updatePaginationButtons(result.total);
                 } else {
-                    alert('Fehler beim Laden der Log-Einträge');
+                    throw new Error(result.error || 'Fehler beim Laden der Log-Einträge');
                 }
             } catch (error) {
                 console.error('Error loading log content:', error);
-                alert(`Fehler: ${error.message}`);
+                alert(`Fehler beim Laden der Log-Einträge: ${error.message}`);
+                document.getElementById('logViewerContent').innerHTML = 
+                    `<p style="text-align: center; color: #dc3545; padding: 40px;">Fehler: ${error.message}</p>`;
             }
         }
 
