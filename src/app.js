@@ -48,28 +48,16 @@ app.use(cors({
   credentials: true
 }));
 
-// Content Security Policy - Verhindert Mixed Content
+// Security Headers
+// HINWEIS: CSP und HSTS wurden temporär deaktiviert, da Nginx als Reverse Proxy
+// das SSL terminiert und diese Header besser auf Nginx-Ebene gesetzt werden sollten
 app.use((req, res, next) => {
-  // Nur HTTPS-Ressourcen erlauben (verhindert Mixed Content)
-  res.setHeader(
-    'Content-Security-Policy',
-    "default-src 'self' https:; " +
-    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " +
-    "font-src 'self' https://fonts.gstatic.com; " +
-    "img-src 'self' data: https:; " +
-    "connect-src 'self' https:; " +
-    "frame-ancestors 'none';"
-  );
-  
-  // Upgrade-Insecure-Requests: Automatisch HTTP zu HTTPS upgraden
-  res.setHeader('Upgrade-Insecure-Requests', '1');
-  
-  // Strict Transport Security (HSTS) - Nur HTTPS erlauben
-  if (process.env.NODE_ENV === 'production') {
-    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  }
-  
+  // Verhindere Clickjacking
+  res.setHeader('X-Frame-Options', 'DENY');
+
+  // Verhindere MIME-Type Sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+
   next();
 });
 
@@ -259,6 +247,13 @@ if (!fs.existsSync(photosDir)) {
   fs.mkdirSync(photosDir, { recursive: true });
 }
 app.use('/photos', express.static(photosDir));
+
+// Serve thumbnails statically
+const thumbnailsDir = path.join(__dirname, '../data/thumbnails');
+if (!fs.existsSync(thumbnailsDir)) {
+  fs.mkdirSync(thumbnailsDir, { recursive: true });
+}
+app.use('/thumbnails', express.static(thumbnailsDir));
 
 // Error Handling
 app.use((err, req, res, next) => {
