@@ -2,12 +2,12 @@ const { getDatabase } = require('../database');
 const { v4: uuidv4 } = require('uuid');
 
 class User {
-  static create(data) {
+  static async create(data) {
     const db = getDatabase();
     
     // Prüfe zuerst, ob User bereits existiert
     if (data.guid) {
-      const existingUser = this.findByGuid(data.guid);
+      const existingUser = await this.findByGuid(data.guid);
       if (existingUser) {
         // User existiert bereits, aktualisiere nur wenn neue Daten vorhanden sind
         if (data.gender !== undefined || data.birthYear !== undefined || data.email !== undefined || data.lastBackupTimestamp !== undefined) {
@@ -31,7 +31,7 @@ class User {
             logger.debug(`User.create(${data.guid}): Saving lastBackupTimestamp: ${lastBackupTimestamp} (type: ${typeof lastBackupTimestamp})`);
           }
           
-          updateStmt.run(
+          await updateStmt.run(
             data.gender || null,
             data.birthYear || null,
             data.email || null,
@@ -39,7 +39,7 @@ class User {
             data.guid
           );
           
-          const updatedUser = this.findByGuid(data.guid);
+          const updatedUser = await this.findByGuid(data.guid);
           if (process.env.NODE_ENV === 'development') {
             const logger = require('../utils/logger');
             logger.debug(`User.create(${data.guid}): After save, lastBackupTimestamp in DB: ${updatedUser?.lastBackupTimestamp}`);
@@ -73,7 +73,9 @@ class User {
         isAdmin = 1; // Im Development: Alle Web-Benutzer sind Admin
       } else {
         // Prüfe ob es der erste Web-Benutzer ist (wird Super-Admin)
-        const userCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE username IS NOT NULL').get().count;
+        const countStmt = db.prepare('SELECT COUNT(*) as count FROM users WHERE username IS NOT NULL');
+        const countRow = await countStmt.get();
+        const userCount = countRow ? countRow.count : 0;
         isAdmin = userCount === 0 ? 1 : 0;
       }
     }
@@ -85,7 +87,7 @@ class User {
     `);
     
     try {
-      stmt.run(
+      await stmt.run(
         id,
         data.guid,
         data.gender || null,
@@ -98,7 +100,7 @@ class User {
         isAdmin
       );
       
-      const createdUser = this.findByGuid(data.guid);
+      const createdUser = await this.findByGuid(data.guid);
       if (!createdUser) {
         throw new Error(`Failed to retrieve created user with GUID: ${data.guid}`);
       }
@@ -106,7 +108,7 @@ class User {
     } catch (error) {
       // Wenn User bereits existiert (Race Condition), versuche ihn zu finden
       if (data.guid) {
-        const existingUser = this.findByGuid(data.guid);
+        const existingUser = await this.findByGuid(data.guid);
         if (existingUser) {
           return existingUser;
         }
@@ -115,10 +117,10 @@ class User {
     }
   }
   
-  static findByGuid(guid) {
+  static async findByGuid(guid) {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM users WHERE guid = ?');
-    const row = stmt.get(guid);
+    const row = await stmt.get(guid);
     if (row) {
       const user = this.mapRow(row);
       // Debug: Log lastBackupTimestamp aus der Datenbank
@@ -131,31 +133,31 @@ class User {
     return null;
   }
   
-  static findById(id) {
+  static async findById(id) {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM users WHERE id = ?');
-    const row = stmt.get(id);
+    const row = await stmt.get(id);
     return row ? this.mapRow(row) : null;
   }
   
-  static findByGoogleId(googleId) {
+  static async findByGoogleId(googleId) {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM users WHERE google_id = ?');
-    const row = stmt.get(googleId);
+    const row = await stmt.get(googleId);
     return row ? this.mapRow(row) : null;
   }
   
-  static findByEmail(email) {
+  static async findByEmail(email) {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM users WHERE email = ?');
-    const row = stmt.get(email);
+    const row = await stmt.get(email);
     return row ? this.mapRow(row) : null;
   }
   
-  static findByUsername(username) {
+  static async findByUsername(username) {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM users WHERE username = ?');
-    const row = stmt.get(username);
+    const row = await stmt.get(username);
     return row ? this.mapRow(row) : null;
   }
   
@@ -167,9 +169,9 @@ class User {
     return bcrypt.compareSync(password, user.passwordHash);
   }
   
-  static update(guid, data) {
+  static async update(guid, data) {
     const db = getDatabase();
-    const existingUser = this.findByGuid(guid);
+    const existingUser = await this.findByGuid(guid);
     if (!existingUser) {
       return null;
     }
@@ -194,7 +196,7 @@ class User {
       logger.debug(`User.update(${guid}): Saving lastBackupTimestamp: ${lastBackupTimestamp} (type: ${typeof lastBackupTimestamp})`);
     }
     
-    stmt.run(
+    await stmt.run(
       gender || null,
       birthYear || null,
       lastBackupTimestamp,
@@ -202,7 +204,7 @@ class User {
     );
     
     // Verifiziere, dass der Wert gespeichert wurde
-    const updatedUser = this.findByGuid(guid);
+    const updatedUser = await this.findByGuid(guid);
     if (process.env.NODE_ENV === 'development') {
       const logger = require('../utils/logger');
       logger.debug(`User.update(${guid}): After save, lastBackupTimestamp in DB: ${updatedUser?.lastBackupTimestamp}`);
@@ -211,23 +213,23 @@ class User {
     return updatedUser;
   }
   
-  static createOrUpdate(data) {
-    const existing = this.findByGuid(data.guid);
+  static async createOrUpdate(data) {
+    const existing = await this.findByGuid(data.guid);
     if (existing) {
       // Wenn lastBackupTimestamp nicht explizit übergeben wurde, behalte den vorhandenen Wert
       if (data.lastBackupTimestamp === undefined && existing.lastBackupTimestamp) {
         data.lastBackupTimestamp = existing.lastBackupTimestamp;
       }
-      return this.update(data.guid, data);
+      return await this.update(data.guid, data);
     } else {
-      return this.create(data);
+      return await this.create(data);
     }
   }
   
-  static getAll() {
+  static async getAll() {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM users ORDER BY created_at DESC');
-    const rows = stmt.all();
+    const rows = await stmt.all();
     return rows.map(row => this.mapRow(row));
   }
   
@@ -257,7 +259,7 @@ class User {
       googleId: row.google_id,
       username: row.username,
       passwordHash: row.password_hash,
-      isAdmin: row.is_admin === 1,
+      isAdmin: row.is_admin === 1 || row.is_admin === true, // Support both SQLite (1) and PostgreSQL (true)
       createdAt: row.created_at,
       updatedAt: row.updated_at
     };

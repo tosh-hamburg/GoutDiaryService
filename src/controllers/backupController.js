@@ -8,7 +8,7 @@ const logger = require('../utils/logger');
  * Gibt Metadaten über die verfügbaren Backups für einen User zurück
  * (Datum des letzten Backups, Anzahl der Datensätze, etc.)
  */
-exports.getBackupMetadata = (req, res, next) => {
+exports.getBackupMetadata = async (req, res, next) => {
   try {
     const userGuid = req.query.userId;
     
@@ -16,7 +16,7 @@ exports.getBackupMetadata = (req, res, next) => {
       return res.status(400).json({ error: 'userId (GUID) is required' });
     }
     
-    const user = User.findByGuid(userGuid);
+    const user = await User.findByGuid(userGuid);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -24,13 +24,16 @@ exports.getBackupMetadata = (req, res, next) => {
     const userId = user.id;
     
     // Hole letzte Timestamps
-    const lastUricAcidTimestamp = UricAcidValue.getLastTimestamp(userId);
-    const lastMealTimestamp = Meal.getLastTimestamp(userId);
+    const lastUricAcidTimestamp = await UricAcidValue.getLastTimestamp(userId);
+    const lastMealTimestamp = await Meal.getLastTimestamp(userId);
     
     // Zähle Datensätze
-    const uricAcidCount = UricAcidValue.findByUserId(userId).length;
-    const mealCount = Meal.findByUserId(userId).length;
-    const foodItemCount = FoodItem.findByUserId(userId).length;
+    const uricAcidValues = await UricAcidValue.findByUserId(userId);
+    const meals = await Meal.findByUserId(userId);
+    const foodItems = await FoodItem.findByUserId(userId);
+    const uricAcidCount = uricAcidValues.length;
+    const mealCount = meals.length;
+    const foodItemCount = foodItems.length;
     
     res.json({
       success: true,
@@ -52,7 +55,7 @@ exports.getBackupMetadata = (req, res, next) => {
 /**
  * Gibt eine Liste der verfügbaren Backups zurück (basierend auf Timestamps)
  */
-exports.listBackups = (req, res, next) => {
+exports.listBackups = async (req, res, next) => {
   try {
     const userGuid = req.query.userId;
     
@@ -60,7 +63,7 @@ exports.listBackups = (req, res, next) => {
       return res.status(400).json({ error: 'userId (GUID) is required' });
     }
     
-    const user = User.findByGuid(userGuid);
+    const user = await User.findByGuid(userGuid);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -68,8 +71,8 @@ exports.listBackups = (req, res, next) => {
     const userId = user.id;
     
     // Hole letzte Timestamps als Backup-Zeitpunkte
-    const lastUricAcidTimestamp = UricAcidValue.getLastTimestamp(userId);
-    const lastMealTimestamp = Meal.getLastTimestamp(userId);
+    const lastUricAcidTimestamp = await UricAcidValue.getLastTimestamp(userId);
+    const lastMealTimestamp = await Meal.getLastTimestamp(userId);
     
     const backups = [];
     
@@ -79,9 +82,12 @@ exports.listBackups = (req, res, next) => {
         ? (new Date(lastUricAcidTimestamp) > new Date(lastMealTimestamp) ? lastUricAcidTimestamp : lastMealTimestamp)
         : (lastUricAcidTimestamp || lastMealTimestamp);
       
-      const uricAcidCount = UricAcidValue.findByUserId(userId).length;
-      const mealCount = Meal.findByUserId(userId).length;
-      const foodItemCount = FoodItem.findByUserId(userId).length;
+      const uricAcidValues = await UricAcidValue.findByUserId(userId);
+      const meals = await Meal.findByUserId(userId);
+      const foodItems = await FoodItem.findByUserId(userId);
+      const uricAcidCount = uricAcidValues.length;
+      const mealCount = meals.length;
+      const foodItemCount = foodItems.length;
       
       backups.push({
         id: 'service_backup_latest',

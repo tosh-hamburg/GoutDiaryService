@@ -314,12 +314,12 @@ app.use((req, res) => {
 async function start() {
   try {
     logger.info('Starting server initialization...');
-    
-    // Initialize SQLite database
+
+    // Initialize database (PostgreSQL with fallback to SQLite)
     logger.info('Initializing database...');
-    initDatabase(); // initDatabase ist synchron, kein await nötig
+    await initDatabase(); // Now async to support PostgreSQL
     logger.info('Database initialized successfully');
-    
+
     // Start server
     logger.info(`Starting server on port ${PORT}...`);
     app.listen(PORT, () => {

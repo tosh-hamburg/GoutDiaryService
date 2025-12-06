@@ -2,7 +2,7 @@ const FoodItem = require('../models/FoodItem');
 const User = require('../models/User');
 const logger = require('../utils/logger');
 
-exports.create = (req, res, next) => {
+exports.create = async (req, res, next) => {
   try {
     const userGuid = req.body.userId; // userId ist eigentlich die GUID
     
@@ -11,16 +11,16 @@ exports.create = (req, res, next) => {
     }
     
     // Finde oder erstelle User anhand der GUID
-    let user = User.findByGuid(userGuid);
+    let user = await User.findByGuid(userGuid);
     if (!user) {
       // User existiert nicht, erstelle ihn
       try {
-        user = User.create({ guid: userGuid });
+        user = await User.create({ guid: userGuid });
         logger.info(`Created new user for GUID: ${userGuid}`);
       } catch (createError) {
         // User könnte bereits existieren (Race Condition), versuche nochmal zu finden
         logger.warn(`Error creating user, trying to find again: ${createError.message}`);
-        user = User.findByGuid(userGuid);
+        user = await User.findByGuid(userGuid);
         if (!user) {
           logger.error(`Failed to create or find user for GUID: ${userGuid}`);
           return res.status(500).json({ error: 'Failed to create or find user' });
@@ -70,7 +70,7 @@ exports.create = (req, res, next) => {
       return res.status(400).json({ error: 'category is required' });
     }
     
-    const foodItem = FoodItem.create(data);
+    const foodItem = await FoodItem.create(data);
     
     if (!foodItem || !foodItem.id) {
       logger.error(`Failed to create food item: ${data.name} for user ${userGuid}`);
@@ -89,7 +89,7 @@ exports.create = (req, res, next) => {
   }
 };
 
-exports.getAll = (req, res, next) => {
+exports.getAll = async (req, res, next) => {
   try {
     const userGuid = req.query.userId; // userId ist eigentlich die GUID
     const apiKey = req.apiKey;
@@ -120,14 +120,14 @@ exports.getAll = (req, res, next) => {
     }
     
     // Finde User anhand der GUID
-    const user = User.findByGuid(userGuid);
+    const user = await User.findByGuid(userGuid);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
     
     const userId = user.id;
-    const foodItems = FoodItem.findByUserId(userId);
-    
+    const foodItems = await FoodItem.findByUserId(userId);
+
     res.json({
       success: true,
       count: foodItems.length,
@@ -139,7 +139,7 @@ exports.getAll = (req, res, next) => {
   }
 };
 
-exports.update = (req, res, next) => {
+exports.update = async (req, res, next) => {
   try {
     const foodItemId = req.params.id;
     const userGuid = req.body.userId; // userId ist eigentlich die GUID
@@ -149,13 +149,13 @@ exports.update = (req, res, next) => {
     }
     
     // Finde User anhand der GUID
-    const user = User.findByGuid(userGuid);
+    const user = await User.findByGuid(userGuid);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
     
     // Prüfe ob FoodItem existiert und dem User gehört
-    const existingFoodItem = FoodItem.findById(foodItemId);
+    const existingFoodItem = await FoodItem.findById(foodItemId);
     if (!existingFoodItem) {
       return res.status(404).json({ error: 'Food item not found' });
     }
@@ -184,7 +184,7 @@ exports.update = (req, res, next) => {
       return res.status(400).json({ error: 'category is required' });
     }
     
-    const foodItem = FoodItem.update(foodItemId, data);
+    const foodItem = await FoodItem.update(foodItemId, data);
     
     logger.info(`Updated food item ${foodItemId} for user ${userGuid}`);
     
@@ -198,7 +198,7 @@ exports.update = (req, res, next) => {
   }
 };
 
-exports.delete = (req, res, next) => {
+exports.delete = async (req, res, next) => {
   try {
     const foodItemId = req.params.id;
     const userGuid = req.query.userId || req.body.userId; // userId ist eigentlich die GUID
@@ -208,13 +208,13 @@ exports.delete = (req, res, next) => {
     }
     
     // Finde User anhand der GUID
-    const user = User.findByGuid(userGuid);
+    const user = await User.findByGuid(userGuid);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
     
     // Prüfe ob FoodItem existiert und dem User gehört
-    const existingFoodItem = FoodItem.findById(foodItemId);
+    const existingFoodItem = await FoodItem.findById(foodItemId);
     if (!existingFoodItem) {
       return res.status(404).json({ error: 'Food item not found' });
     }
@@ -223,7 +223,7 @@ exports.delete = (req, res, next) => {
       return res.status(403).json({ error: 'Access denied: Food item belongs to a different user' });
     }
     
-    const deleted = FoodItem.delete(foodItemId);
+    const deleted = await FoodItem.delete(foodItemId);
     
     if (deleted) {
       logger.info(`Deleted food item ${foodItemId} for user ${userGuid}`);

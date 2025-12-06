@@ -2,13 +2,13 @@ const { getDatabase } = require('../database');
 const { v4: uuidv4 } = require('uuid');
 
 class UricAcidValue {
-  static create(data) {
+  static async create(data) {
     const db = getDatabase();
     // Verwende vorhandene ID falls vorhanden (für Backup/Update), sonst neue UUID
     const id = data.id || uuidv4();
     
     // Prüfe ob Datensatz bereits existiert
-    const existing = this.findById(id);
+    const existing = await this.findById(id);
     
     if (existing && data.updatedAt) {
       // Wenn Datensatz existiert, vergleiche Zeitstempel
@@ -30,7 +30,7 @@ class UricAcidValue {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
-    stmt.run(
+    await stmt.run(
       id,
       data.userId,
       data.timestamp,
@@ -45,65 +45,65 @@ class UricAcidValue {
       data.notes || null
     );
     
-    return this.findById(id);
+    return await this.findById(id);
   }
   
-  static findById(id) {
+  static async findById(id) {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM uric_acid_values WHERE id = ?');
-    const row = stmt.get(id);
+    const row = await stmt.get(id);
     return row ? this.mapRow(row) : null;
   }
   
-  static findByUserId(userId, options = {}) {
+  static async findByUserId(userId, options = {}) {
     const db = getDatabase();
     let query = 'SELECT * FROM uric_acid_values WHERE user_id = ?';
     const params = [userId];
-    
+
     if (options.startDate) {
       query += ' AND timestamp >= ?';
       params.push(options.startDate);
     }
-    
+
     if (options.endDate) {
       query += ' AND timestamp <= ?';
       params.push(options.endDate);
     }
-    
+
     query += ' ORDER BY timestamp DESC';
-    
+
     if (options.limit) {
       query += ' LIMIT ?';
       params.push(options.limit);
     }
-    
+
     if (options.offset) {
       query += ' OFFSET ?';
       params.push(options.offset);
     }
-    
+
     const stmt = db.prepare(query);
-    const rows = stmt.all(...params);
+    const rows = await stmt.all(...params);
     return rows.map(row => this.mapRow(row));
   }
   
-  static getStats(userId, days = 30) {
+  static async getStats(userId, days = 30) {
     const db = getDatabase();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
     
     const stmt = db.prepare(`
-      SELECT 
+      SELECT
         COUNT(*) as count,
         AVG(value) as average,
         MIN(value) as min,
         MAX(value) as max,
-        SUM(gout_attack) as gout_attacks
+        COUNT(CASE WHEN gout_attack THEN 1 END) as gout_attacks
       FROM uric_acid_values
       WHERE user_id = ? AND timestamp >= ?
     `);
     
-    const result = stmt.get(userId, startDate.toISOString());
+    const result = await stmt.get(userId, startDate.toISOString());
     return {
       count: result.count || 0,
       average: result.average ? parseFloat(result.average.toFixed(2)) : 0,
@@ -113,24 +113,24 @@ class UricAcidValue {
     };
   }
   
-  static getLastTimestamp(userId) {
+  static async getLastTimestamp(userId) {
     const db = getDatabase();
     const stmt = db.prepare('SELECT MAX(timestamp) as lastTimestamp FROM uric_acid_values WHERE user_id = ?');
-    const row = stmt.get(userId);
+    const row = await stmt.get(userId);
     return row?.lastTimestamp || null;
   }
   
-  static delete(id) {
+  static async delete(id) {
     const db = getDatabase();
     const stmt = db.prepare('DELETE FROM uric_acid_values WHERE id = ?');
-    const result = stmt.run(id);
+    const result = await stmt.run(id);
     return result.changes > 0;
   }
   
-  static deleteByUserId(userId) {
+  static async deleteByUserId(userId) {
     const db = getDatabase();
     const stmt = db.prepare('DELETE FROM uric_acid_values WHERE user_id = ?');
-    const result = stmt.run(userId);
+    const result = await stmt.run(userId);
     return result.changes;
   }
   

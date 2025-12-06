@@ -1,41 +1,68 @@
+// DEPRECATED: This file is kept for backward compatibility
+// New code should use src/db/index.js
+
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 const logger = require('./utils/logger');
 
-let db = null;
+// Import new database system
+const newDb = require('./db/index');
 
-function initDatabase() {
+let db = null;
+let usingNewSystem = false;
+
+async function initDatabase() {
   try {
     logger.info('initDatabase() called');
+
+    // Try to use new database system (PostgreSQL with fallback to SQLite)
+    try {
+      await newDb.initDatabase();
+      usingNewSystem = true;
+      logger.info('Using new database system (PostgreSQL or SQLite via db/index.js)');
+
+      // Get SQLite db if using SQLite in new system
+      const dbInstance = newDb.getDatabase();
+      if (dbInstance.type === 'sqlite') {
+        db = dbInstance.db;
+      }
+
+      return db;
+    } catch (error) {
+      logger.warn('New database system failed, falling back to legacy SQLite:', error);
+      usingNewSystem = false;
+    }
+
+    // Fallback to legacy SQLite initialization
     const dbPath = process.env.DB_PATH || './data/harnsaeure.db';
     const dbDir = path.dirname(dbPath);
-    
+
     logger.info(`Database path: ${dbPath}, directory: ${dbDir}`);
-    
+
     // Create data directory if it doesn't exist
     if (!fs.existsSync(dbDir)) {
       logger.info(`Creating database directory: ${dbDir}`);
       fs.mkdirSync(dbDir, { recursive: true });
       logger.info(`Created database directory: ${dbDir}`);
     }
-    
+
     // Open database connection
     logger.info('Opening database connection...');
     db = new Database(dbPath);
     logger.info('Database connection opened');
-    
+
     logger.info('Setting WAL mode...');
     db.pragma('journal_mode = WAL'); // Enable WAL mode for better concurrency
     logger.info('WAL mode enabled');
-    
+
     logger.info(`Database initialized: ${dbPath}`);
-    
+
     // Create tables
     logger.info('Creating tables...');
     createTables();
     logger.info('Tables created successfully');
-    
+
     return db;
   } catch (error) {
     logger.error('Failed to initialize database:', error);
@@ -418,6 +445,61 @@ function createDevAdminAccount() {
 }
 
 function getDatabase() {
+  // If using new database system (PostgreSQL), return the wrapper
+  if (usingNewSystem) {
+    const dbInstance = newDb.getDatabase();
+
+    // For PostgreSQL, create a SQLite-compatible wrapper
+    if (dbInstance.type === 'postgres') {
+      return {
+        prepare: (sql) => {
+          return {
+            get: async (...params) => {
+              let pgSql = sql;
+              let paramIndex = 1;
+              pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+
+              const result = await dbInstance.query(pgSql, params);
+              return result.rows && result.rows.length > 0 ? result.rows[0] : null;
+            },
+            all: async (...params) => {
+              let pgSql = sql;
+              let paramIndex = 1;
+              pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+
+              const result = await dbInstance.query(pgSql, params);
+              return result.rows || [];
+            },
+            run: async (...params) => {
+              let pgSql = sql;
+              let paramIndex = 1;
+              pgSql = sql.replace(/\?/g, () => `$${paramIndex++}`);
+
+              if (sql.trim().toUpperCase().startsWith('INSERT')) {
+                if (!pgSql.includes('RETURNING')) {
+                  pgSql += ' RETURNING id';
+                }
+              }
+
+              const result = await dbInstance.query(pgSql, params);
+              return {
+                changes: result.rowCount || 0,
+                lastInsertRowid: result.rows && result.rows.length > 0 ? result.rows[0].id : null
+              };
+            }
+          };
+        },
+        exec: async (sql) => {
+          await dbInstance.query(sql);
+        }
+      };
+    }
+
+    // For SQLite via new system
+    return dbInstance.db;
+  }
+
+  // Legacy SQLite
   if (!db) {
     throw new Error('Database not initialized. Call initDatabase() first.');
   }

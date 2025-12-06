@@ -37,18 +37,18 @@ if (!clientID || !clientSecret) {
       }
       
       // Prüfe ob User bereits existiert
-      let user = User.findByGoogleId(id);
+      let user = await User.findByGoogleId(id);
       
       if (!user) {
         // Prüfe ob User mit dieser Email existiert
-        user = User.findByEmail(email);
+        user = await User.findByEmail(email);
         
         if (user) {
           // Update existing user with Google ID
           const db = require('../database').getDatabase();
           const updateStmt = db.prepare('UPDATE users SET google_id = ? WHERE id = ?');
-          updateStmt.run(id, user.id);
-          user = User.findByGoogleId(id);
+          await updateStmt.run(id, user.id);
+          user = await User.findByGoogleId(id);
         } else {
           // Erstelle neuen User (Google OAuth = Web-Benutzer, kann Admin sein)
           const isDevelopment = process.env.NODE_ENV === 'development';
@@ -59,13 +59,15 @@ if (!clientID || !clientSecret) {
           } else {
             // Prüfe ob es der erste Web-Benutzer ist (wird Super-Admin)
             const db = require('../database').getDatabase();
-            const webUserCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE email IS NOT NULL OR username IS NOT NULL').get().count;
+            const countStmt = db.prepare('SELECT COUNT(*) as count FROM users WHERE email IS NOT NULL OR username IS NOT NULL');
+            const countRow = await countStmt.get();
+            const webUserCount = countRow ? countRow.count : 0;
             isAdmin = webUserCount === 0 ? 1 : 0;
           }
           
           const guid = uuidv4();
           // Google OAuth Benutzer haben email, können also Admin sein
-          const newUser = User.create({
+          const newUser = await User.create({
             guid: guid,
             email: email,
             googleId: id,
@@ -99,23 +101,23 @@ passport.use(new LocalStrategy(
   },
   async (username, password, done) => {
     try {
-      const user = User.findByUsername(username);
+      const user = await User.findByUsername(username);
       if (!user) {
         logger.warn(`Local login failed: user not found: ${username}`);
         return done(null, false, { message: 'Ungültiger Benutzername oder Passwort' });
       }
-      
+
       // Prüfe ob Benutzer überhaupt ein Passwort hat (GUID-Benutzer haben keins)
       if (!user.passwordHash) {
         logger.warn(`Local login failed: user ${username} has no password (GUID-only user)`);
         return done(null, false, { message: 'Ungültiger Benutzername oder Passwort' });
       }
-      
+
       if (!User.verifyPassword(user, password)) {
         logger.warn(`Local login failed: invalid password for user: ${username}`);
         return done(null, false, { message: 'Ungültiger Benutzername oder Passwort' });
       }
-      
+
       logger.info(`Local login successful: ${username} (Admin: ${user.isAdmin}, Mode: ${isDevelopment ? 'dev' : 'prod'})`);
       return done(null, user);
     } catch (error) {
@@ -125,10 +127,10 @@ passport.use(new LocalStrategy(
   }
 ));
 
-passport.deserializeUser((id, done) => {
+passport.deserializeUser(async (id, done) => {
   try {
     logger.info(`Deserializing user with ID: ${id}`);
-    const user = User.findById(id);
+    const user = await User.findById(id);
     if (user) {
       const identifier = user.email || user.username || 'unknown';
       logger.info(`User deserialized successfully: ${identifier} (Admin: ${user.isAdmin})`);

@@ -5,12 +5,12 @@ const path = require('path');
 const logger = require('../utils/logger');
 
 class FoodItem {
-  static create(data) {
+  static async create(data) {
     const db = getDatabase();
     const id = data.id || uuidv4();
     
     // Prüfe ob FoodItem bereits existiert (über user_id und name, da das der UNIQUE constraint ist)
-    const existing = this.findByUserIdAndName(data.userId, data.name);
+    const existing = await this.findByUserIdAndName(data.userId, data.name);
     
     if (existing && data.updatedAt) {
       // Wenn FoodItem existiert, vergleiche Zeitstempel
@@ -41,7 +41,7 @@ class FoodItem {
     `);
     
     try {
-      stmt.run(
+      await stmt.run(
         id,
         data.userId,
         data.name,
@@ -55,7 +55,7 @@ class FoodItem {
       );
     } catch (error) {
       // Wenn INSERT fehlschlägt, versuche den Eintrag über user_id und name zu finden
-      const existing = this.findByUserIdAndName(data.userId, data.name);
+      const existing = await this.findByUserIdAndName(data.userId, data.name);
       if (existing) {
         return existing;
       }
@@ -63,13 +63,13 @@ class FoodItem {
     }
     
     // Nach INSERT/UPDATE: Finde den Eintrag über user_id und name (da ON CONFLICT die ID ändern könnte)
-    const foodItem = this.findByUserIdAndName(data.userId, data.name);
+    const foodItem = await this.findByUserIdAndName(data.userId, data.name);
     if (foodItem) {
       return foodItem;
     }
     
     // Fallback: Versuche über ID zu finden
-    const foodItemById = this.findById(id);
+    const foodItemById = await this.findById(id);
     if (foodItemById) {
       return foodItemById;
     }
@@ -78,28 +78,28 @@ class FoodItem {
     throw new Error(`Failed to create or find food item: ${data.name} for user ${data.userId}`);
   }
   
-  static findById(id) {
+  static async findById(id) {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM food_items WHERE id = ?');
-    const row = stmt.get(id);
+    const row = await stmt.get(id);
     return row ? this.mapRow(row) : null;
   }
   
-  static findByUserId(userId) {
+  static async findByUserId(userId) {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM food_items WHERE user_id = ? ORDER BY name ASC');
-    const rows = stmt.all(userId);
+    const rows = await stmt.all(userId);
     return rows.map(row => this.mapRow(row));
   }
   
-  static findByUserIdAndName(userId, name) {
+  static async findByUserIdAndName(userId, name) {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM food_items WHERE user_id = ? AND name = ?');
-    const row = stmt.get(userId, name);
+    const row = await stmt.get(userId, name);
     return row ? this.mapRow(row) : null;
   }
   
-  static update(id, data) {
+  static async update(id, data) {
     const db = getDatabase();
     const stmt = db.prepare(`
       UPDATE food_items SET
@@ -115,7 +115,7 @@ class FoodItem {
       WHERE id = ?
     `);
     
-    stmt.run(
+    await stmt.run(
       data.name,
       data.purinPer100g,
       data.uricAcidPer100g,
@@ -127,21 +127,21 @@ class FoodItem {
       id
     );
     
-    return this.findById(id);
+    return await this.findById(id);
   }
   
-  static delete(id) {
+  static async delete(id) {
     const db = getDatabase();
     
     // Hole das FoodItem, um die Bild-Pfade zu erhalten
-    const foodItem = this.findById(id);
+    const foodItem = await this.findById(id);
     
     // Lösche die Bilder, falls vorhanden
     if (foodItem) {
       try {
         // Finde die user_id, um den korrekten Pfad zu konstruieren
         const User = require('./User');
-        const user = User.findById(foodItem.userId);
+        const user = await User.findById(foodItem.userId);
         
         if (user && user.guid) {
           const imagePaths = [foodItem.imagePath, foodItem.thumbnailPath].filter(p => p); // Entferne null/undefined
@@ -167,14 +167,14 @@ class FoodItem {
     
     // Lösche das FoodItem aus der Datenbank
     const stmt = db.prepare('DELETE FROM food_items WHERE id = ?');
-    const result = stmt.run(id);
+    const result = await stmt.run(id);
     return result.changes > 0;
   }
   
-  static deleteByUserId(userId) {
+  static async deleteByUserId(userId) {
     const db = getDatabase();
     const stmt = db.prepare('DELETE FROM food_items WHERE user_id = ?');
-    const result = stmt.run(userId);
+    const result = await stmt.run(userId);
     return result.changes;
   }
   

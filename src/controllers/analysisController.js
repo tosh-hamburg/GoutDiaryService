@@ -14,7 +14,7 @@ exports.analyze = async (req, res, next) => {
     }
     
     // Finde User anhand der GUID
-    const user = User.findByGuid(userGuid);
+    const user = await User.findByGuid(userGuid);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -43,7 +43,7 @@ exports.analyze = async (req, res, next) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
-    stmt.run(
+    await stmt.run(
       analysisId,
       userId,
       new Date().toISOString(),
@@ -69,7 +69,7 @@ exports.analyze = async (req, res, next) => {
   }
 };
 
-exports.getLatest = (req, res, next) => {
+exports.getLatest = async (req, res, next) => {
   try {
     const userGuid = req.query.userId; // userId ist eigentlich die GUID
     
@@ -78,7 +78,7 @@ exports.getLatest = (req, res, next) => {
     }
     
     // Finde User anhand der GUID
-    const user = User.findByGuid(userGuid);
+    const user = await User.findByGuid(userGuid);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -93,7 +93,7 @@ exports.getLatest = (req, res, next) => {
       LIMIT 1
     `);
     
-    const row = stmt.get(userId);
+    const row = await stmt.get(userId);
     
     if (!row) {
       return res.status(404).json({

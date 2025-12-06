@@ -147,10 +147,10 @@ class ApiKey {
   /**
    * Gibt alle API-Keys zurück
    */
-  static getAll() {
+  static async getAll() {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM api_keys ORDER BY created_at DESC');
-    const rows = stmt.all();
+    const rows = await stmt.all();
     return rows.map(row => this.mapRow(row));
   }
 

@@ -2,7 +2,7 @@ const UricAcidValue = require('../models/UricAcidValue');
 const User = require('../models/User');
 const logger = require('../utils/logger');
 
-exports.create = (req, res, next) => {
+exports.create = async (req, res, next) => {
   try {
     const userGuid = req.body.userId; // userId ist eigentlich die GUID
     
@@ -11,10 +11,10 @@ exports.create = (req, res, next) => {
     }
     
     // Finde oder erstelle User anhand der GUID
-    let user = User.findByGuid(userGuid);
+    let user = await User.findByGuid(userGuid);
     if (!user) {
       // User existiert nicht, erstelle ihn
-      user = User.create({ guid: userGuid });
+      user = await User.create({ guid: userGuid });
       logger.info(`Created new user for GUID: ${userGuid}`);
     }
     
@@ -42,7 +42,7 @@ exports.create = (req, res, next) => {
       return res.status(400).json({ error: 'Invalid value. Must be between 0 and 20 mg/dL' });
     }
     
-    const uricAcidValue = UricAcidValue.create(data);
+    const uricAcidValue = await UricAcidValue.create(data);
     
     logger.info(`Created uric acid value for user ${userGuid} (id: ${userId})`, { valueId: uricAcidValue.id });
     
@@ -56,7 +56,7 @@ exports.create = (req, res, next) => {
   }
 };
 
-exports.getAll = (req, res, next) => {
+exports.getAll = async (req, res, next) => {
   try {
     const userGuid = req.query.userId; // userId ist eigentlich die GUID
     const apiKey = req.apiKey;
@@ -84,7 +84,7 @@ exports.getAll = (req, res, next) => {
     }
     
     // Finde User anhand der GUID
-    const user = User.findByGuid(userGuid);
+    const user = await User.findByGuid(userGuid);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -97,9 +97,9 @@ exports.getAll = (req, res, next) => {
     if (endDate) options.endDate = endDate;
     if (limit) options.limit = parseInt(limit);
     if (offset) options.offset = parseInt(offset);
-    
-    const values = UricAcidValue.findByUserId(userId, options);
-    
+
+    const values = await UricAcidValue.findByUserId(userId, options);
+
     res.json({
       success: true,
       count: values.length,
@@ -111,7 +111,7 @@ exports.getAll = (req, res, next) => {
   }
 };
 
-exports.getStats = (req, res, next) => {
+exports.getStats = async (req, res, next) => {
   try {
     const userGuid = req.query.userId; // userId ist eigentlich die GUID
     
@@ -120,7 +120,7 @@ exports.getStats = (req, res, next) => {
     }
     
     // Finde User anhand der GUID
-    const user = User.findByGuid(userGuid);
+    const user = await User.findByGuid(userGuid);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -128,7 +128,7 @@ exports.getStats = (req, res, next) => {
     const userId = user.id;
     const days = parseInt(req.query.days) || 30;
     
-    const stats = UricAcidValue.getStats(userId, days);
+    const stats = await UricAcidValue.getStats(userId, days);
     
     res.json({
       success: true,
@@ -140,7 +140,7 @@ exports.getStats = (req, res, next) => {
   }
 };
 
-exports.getLastTimestamp = (req, res, next) => {
+exports.getLastTimestamp = async (req, res, next) => {
   try {
     const userGuid = req.query.userId; // userId ist eigentlich die GUID
     
@@ -149,13 +149,13 @@ exports.getLastTimestamp = (req, res, next) => {
     }
     
     // Finde User anhand der GUID
-    const user = User.findByGuid(userGuid);
+    const user = await User.findByGuid(userGuid);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
     
     const userId = user.id;
-    const lastTimestamp = UricAcidValue.getLastTimestamp(userId);
+    const lastTimestamp = await UricAcidValue.getLastTimestamp(userId);
     
     res.json({
       success: true,
@@ -169,7 +169,7 @@ exports.getLastTimestamp = (req, res, next) => {
   }
 };
 
-exports.delete = (req, res, next) => {
+exports.delete = async (req, res, next) => {
   try {
     const valueId = req.params.id;
     const userGuid = req.query.userId || req.body.userId; // userId ist eigentlich die GUID
@@ -179,13 +179,13 @@ exports.delete = (req, res, next) => {
     }
     
     // Finde User anhand der GUID
-    const user = User.findByGuid(userGuid);
+    const user = await User.findByGuid(userGuid);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }
     
     // Prüfe ob UricAcidValue existiert und dem User gehört
-    const existingValue = UricAcidValue.findById(valueId);
+    const existingValue = await UricAcidValue.findById(valueId);
     if (!existingValue) {
       return res.status(404).json({ error: 'Uric acid value not found' });
     }
@@ -194,7 +194,7 @@ exports.delete = (req, res, next) => {
       return res.status(403).json({ error: 'Access denied: Uric acid value belongs to a different user' });
     }
     
-    const deleted = UricAcidValue.delete(valueId);
+    const deleted = await UricAcidValue.delete(valueId);
     
     if (deleted) {
       logger.info(`Deleted uric acid value ${valueId} for user ${userGuid}`);

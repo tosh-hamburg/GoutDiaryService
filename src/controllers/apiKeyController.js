@@ -82,10 +82,10 @@ exports.create = (req, res) => {
 /**
  * Gibt alle API-Keys zurück (ohne Keys, nur Metadaten)
  */
-exports.getAll = (req, res) => {
+exports.getAll = async (req, res) => {
   try {
-    const apiKeys = ApiKey.getAll();
-    
+    const apiKeys = await ApiKey.getAll();
+
     res.json({
       success: true,
       data: apiKeys.map(key => ({

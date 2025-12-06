@@ -1,0 +1,58 @@
+# Node modules
+node_modules
+npm-debug.log
+
+# Daten und Logs
+data/
+logs/
+*.log
+
+# SQLite-Datenbanken
+*.db
+*.db-shm
+*.db-wal
+*.db.migrated
+
+# Environment-Dateien
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Dokumentation (optional - auskommentieren falls benötigt)
+*.md
+!README.md
+
+# Test-Dateien
+test/
+tests/
+*.test.js
+*.spec.js
+
+# Build-Artefakte
+dist/
+build/
+
+# Temporäre Dateien
+tmp/
+temp/
+*.tmp

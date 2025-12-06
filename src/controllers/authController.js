@@ -164,16 +164,16 @@ exports.verifyGoogleCredential = async (req, res) => {
     }
 
     // Find user by Google ID
-    let user = User.findByGoogleId(googleId);
+    let user = await User.findByGoogleId(googleId);
 
     if (!user) {
       // Try to find by email and link
-      user = User.findByEmail(email);
+      user = await User.findByEmail(email);
       if (user) {
         const db = require('../database').getDatabase();
         const updateStmt = db.prepare('UPDATE users SET google_id = ? WHERE id = ?');
-        updateStmt.run(googleId, user.id);
-        user = User.findByGoogleId(googleId);
+        await updateStmt.run(googleId, user.id);
+        user = await User.findByGoogleId(googleId);
       } else {
         // Create new user
         const isDevelopment = process.env.NODE_ENV === 'development';
@@ -182,12 +182,14 @@ exports.verifyGoogleCredential = async (req, res) => {
           isAdmin = 1;
         } else {
           const db = require('../database').getDatabase();
-          const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
+          const countStmt = db.prepare('SELECT COUNT(*) as count FROM users');
+          const countRow = await countStmt.get();
+          const userCount = countRow ? countRow.count : 0;
           isAdmin = userCount === 0 ? 1 : 0;
         }
 
         const guid = uuidv4();
-        const newUser = User.create({
+        const newUser = await User.create({
           guid: guid,
           email: email,
           googleId: googleId,

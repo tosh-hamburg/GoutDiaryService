@@ -9,17 +9,17 @@ class FeatureExtractor {
       startDate.setDate(startDate.getDate() - days);
       
       // Get data
-      const uricAcidValues = UricAcidValue.findByUserId(userId, {
+      const uricAcidValues = await UricAcidValue.findByUserId(userId, {
         startDate: startDate.toISOString()
       });
       
-      const meals = Meal.findByUserId(userId, {
+      const meals = await Meal.findByUserId(userId, {
         startDate: startDate.toISOString()
       });
       
       // Calculate statistics
-      const uricAcidStats = UricAcidValue.getStats(userId, days);
-      const dietStats = Meal.getDietStats(userId, days);
+      const uricAcidStats = await UricAcidValue.getStats(userId, days);
+      const dietStats = await Meal.getDietStats(userId, days);
       
       // Calculate trends
       const trends = this.calculateTrends(uricAcidValues);

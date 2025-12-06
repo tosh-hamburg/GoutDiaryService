@@ -5,13 +5,13 @@ const path = require('path');
 const logger = require('../utils/logger');
 
 class Meal {
-  static create(data) {
+  static async create(data) {
     const db = getDatabase();
     // Verwende vorhandene ID falls vorhanden (für Backup/Update), sonst neue UUID
     const id = data.id || uuidv4();
     
     // Prüfe ob Mahlzeit bereits existiert
-    const existing = this.findById(id);
+    const existing = await this.findById(id);
     
     if (existing && data.updatedAt) {
       // Wenn Mahlzeit existiert, vergleiche Zeitstempel
@@ -34,7 +34,7 @@ class Meal {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
-    mealStmt.run(
+    await mealStmt.run(
       id,
       data.userId,
       data.timestamp,
@@ -49,7 +49,7 @@ class Meal {
     
     // Lösche alte Komponenten (für Backup: vollständige Synchronisation)
     const deleteComponentsStmt = db.prepare('DELETE FROM meal_components WHERE meal_id = ?');
-    deleteComponentsStmt.run(id);
+    await deleteComponentsStmt.run(id);
     
     // Insert components if provided
     if (data.components && Array.isArray(data.components) && data.components.length > 0) {
@@ -62,7 +62,7 @@ class Meal {
       
       for (const component of data.components) {
         const componentId = component.id || uuidv4();
-        componentStmt.run(
+        await componentStmt.run(
           componentId,
           id,
           component.foodItemName,
@@ -75,25 +75,25 @@ class Meal {
       }
     }
     
-    return this.findById(id);
+    return await this.findById(id);
   }
   
-  static findById(id) {
+  static async findById(id) {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM meals WHERE id = ?');
-    const row = stmt.get(id);
+    const row = await stmt.get(id);
     if (!row) return null;
     
     const meal = this.mapRow(row);
     // Load components
-    meal.components = this.getComponentsByMealId(id);
+    meal.components = await this.getComponentsByMealId(id);
     return meal;
   }
   
-  static getComponentsByMealId(mealId) {
+  static async getComponentsByMealId(mealId) {
     const db = getDatabase();
     const stmt = db.prepare('SELECT * FROM meal_components WHERE meal_id = ? ORDER BY created_at');
-    const rows = stmt.all(mealId);
+    const rows = await stmt.all(mealId);
     return rows.map(row => ({
       id: row.id,
       mealId: row.meal_id,
@@ -106,39 +106,41 @@ class Meal {
     }));
   }
   
-  static findByUserId(userId, options = {}) {
+  static async findByUserId(userId, options = {}) {
     const db = getDatabase();
     let query = 'SELECT * FROM meals WHERE user_id = ?';
     const params = [userId];
-    
+
     if (options.startDate) {
       query += ' AND timestamp >= ?';
       params.push(options.startDate);
     }
-    
+
     if (options.endDate) {
       query += ' AND timestamp <= ?';
       params.push(options.endDate);
     }
-    
+
     query += ' ORDER BY timestamp DESC';
-    
+
     if (options.limit) {
       query += ' LIMIT ?';
       params.push(options.limit);
     }
-    
+
     const stmt = db.prepare(query);
-    const rows = stmt.all(...params);
-    return rows.map(row => {
+    const rows = await stmt.all(...params);
+    const meals = [];
+    for (const row of rows) {
       const meal = this.mapRow(row);
       // Load components for each meal
-      meal.components = this.getComponentsByMealId(meal.id);
-      return meal;
-    });
+      meal.components = await this.getComponentsByMealId(meal.id);
+      meals.push(meal);
+    }
+    return meals;
   }
   
-  static getDietStats(userId, days = 30) {
+  static async getDietStats(userId, days = 30) {
     const db = getDatabase();
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
@@ -153,7 +155,7 @@ class Meal {
       WHERE user_id = ? AND timestamp >= ?
     `);
     
-    const result = stmt.get(userId, startDate.toISOString());
+    const result = await stmt.get(userId, startDate.toISOString());
     return {
       mealCount: result.meal_count || 0,
       avgPurin: result.avg_purin ? Math.round(result.avg_purin) : 0,
@@ -162,29 +164,29 @@ class Meal {
     };
   }
   
-  static getLastTimestamp(userId) {
+  static async getLastTimestamp(userId) {
     const db = getDatabase();
     const stmt = db.prepare('SELECT MAX(timestamp) as lastTimestamp FROM meals WHERE user_id = ?');
-    const row = stmt.get(userId);
+    const row = await stmt.get(userId);
     return row?.lastTimestamp || null;
   }
   
-  static delete(id) {
+  static async delete(id) {
     const db = getDatabase();
     
     // Hole die Mahlzeit, um den Thumbnail-Pfad zu erhalten
-    const meal = this.findById(id);
+    const meal = await this.findById(id);
     
     // Lösche das Thumbnail, falls vorhanden
     if (meal && meal.thumbnailPath) {
       try {
         // Finde die user_id, um den korrekten Pfad zu konstruieren
         const userStmt = db.prepare('SELECT user_id FROM meals WHERE id = ?');
-        const userRow = userStmt.get(id);
+        const userRow = await userStmt.get(id);
         
         if (userRow) {
           const User = require('./User');
-          const user = User.findById(userRow.user_id);
+          const user = await User.findById(userRow.user_id);
           
           if (user && user.guid) {
             const thumbnailFullPath = path.join(__dirname, '../../data/thumbnails', user.guid, meal.thumbnailPath);
@@ -203,26 +205,27 @@ class Meal {
     
     // Lösche zuerst alle Komponenten der Mahlzeit
     const deleteComponentsStmt = db.prepare('DELETE FROM meal_components WHERE meal_id = ?');
-    deleteComponentsStmt.run(id);
+    await deleteComponentsStmt.run(id);
     
     // Dann lösche die Mahlzeit selbst
     const deleteMealStmt = db.prepare('DELETE FROM meals WHERE id = ?');
-    const result = deleteMealStmt.run(id);
+    const result = await deleteMealStmt.run(id);
     return result.changes > 0;
   }
   
-  static deleteByUserId(userId) {
+  static async deleteByUserId(userId) {
     const db = getDatabase();
     // Lösche zuerst alle Komponenten der Mahlzeiten dieses Users
-    const mealIds = db.prepare('SELECT id FROM meals WHERE user_id = ?').all(userId);
+    const mealIdsStmt = db.prepare('SELECT id FROM meals WHERE user_id = ?');
+    const mealIds = await mealIdsStmt.all(userId);
     if (mealIds.length > 0) {
       const mealIdPlaceholders = mealIds.map(() => '?').join(',');
       const deleteComponentsStmt = db.prepare(`DELETE FROM meal_components WHERE meal_id IN (${mealIdPlaceholders})`);
-      deleteComponentsStmt.run(...mealIds.map(m => m.id));
+      await deleteComponentsStmt.run(...mealIds.map(m => m.id));
     }
     // Dann lösche die Mahlzeiten selbst
     const deleteMealsStmt = db.prepare('DELETE FROM meals WHERE user_id = ?');
-    const result = deleteMealsStmt.run(userId);
+    const result = await deleteMealsStmt.run(userId);
     return result.changes;
   }
   

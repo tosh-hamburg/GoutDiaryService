@@ -1,17 +1,4 @@
-Backend-Service für die App 'Gout Diary'. 
-Achtung: Alle Verbindungen müssen verschlüsselt sein, kein Bestandteil des Service darf unverschlüsselte Daten übertragen.
-Der Code liegt auf einer Freigabe einer Synology, auf der Node.js läuft. Adresse der Synology: 192.168.4.59. Per SSH zu erreichen auf Port 22
-Aus Sicht der Synology liegen die Daten auf /volume1/nodejs/goutdiary, aus Sicht des lokalen Entwicklungsrechners auf W:\
-Die verwendete development domain ist: https://dev.gout-diary.com:3001
-Node.js läuft in einem Docker-Container auf der Synology. Das Zertifikat ist auf Ebene der Synology konfiguriert (Reverse Proxy). Der Reverse Proxy wird auf Port:3000 angesprochen, es wird weitergeleitet auf Port:3001 des Nodejs-Containers.
-
-SSH-Zugang synology: synology:22, Benutzer: adm_ssh, Passwort: 'tosh&123'
-
-YAML-Datei der Container-Konfiguration des Webservice:
 version: '3.8'
-
-services:
-  version: '3.8'
 
 services:
   # 1. PostgreSQL-Dienst (Datenbank)
@@ -39,24 +26,20 @@ services:
 
   # 2. Node.js-Dienst (Anwendung)
   app:
-    build:
-      context: /volume1/nodejs/goutdiary
-      dockerfile: Dockerfile
-    image: gout-diary-app:latest
+    image: node:20-alpine
     container_name: gout_node_app
     restart: unless-stopped
+    working_dir: /usr/src/app
+    command: sh -c "npm install && npm run dev"
     ports:
       - "3001:3001"
     depends_on:
       db:
         condition: service_healthy
     volumes:
-      # Nur Datenverzeichnisse mounten, nicht den gesamten Code
-      #- /volume1/nodejs/goutdiary/data:/usr/src/app/data
-      #- /volume1/nodejs/goutdiary/logs:/usr/src/app/logs
-      # Für Development: Code-Volume (auskommentiert für Production)
-       - /volume1/nodejs/goutdiary:/usr/src/app
-       - /usr/src/app/node_modules  # Verhindert Überschreiben von node_modules
+      # Development-Modus: Gesamten Code mounten für Live-Reload
+      - /volume1/nodejs/goutdiary:/usr/src/app
+      - node_modules_volume:/usr/src/app/node_modules  # Separates Volume für node_modules
     environment:
       NODE_ENV: development
       PORT: 3001
@@ -106,3 +89,6 @@ services:
 networks:
   gout-network:
     driver: bridge
+
+volumes:
+  node_modules_volume:

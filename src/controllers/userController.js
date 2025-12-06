@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const logger = require('../utils/logger');
 
-exports.register = (req, res, next) => {
+exports.register = async (req, res, next) => {
   try {
     const { guid, gender, birthYear, lastBackupTimestamp } = req.body;
     
@@ -18,7 +18,7 @@ exports.register = (req, res, next) => {
       return res.status(400).json({ error: 'Invalid birth year' });
     }
     
-    const user = User.createOrUpdate({
+    const user = await User.createOrUpdate({
       guid,
       gender,
       birthYear: birthYear ? parseInt(birthYear) : null,
@@ -42,7 +42,7 @@ exports.register = (req, res, next) => {
   }
 };
 
-exports.getCurrentUser = (req, res, next) => {
+exports.getCurrentUser = async (req, res, next) => {
   try {
     // GUID aus dem Request Body oder Query Parameter (wird von der App übergeben)
     const userGuid = req.body.userId || req.query.userId || req.apiKey?.userId;
@@ -54,7 +54,7 @@ exports.getCurrentUser = (req, res, next) => {
       });
     }
     
-    const user = User.findByGuid(userGuid);
+    const user = await User.findByGuid(userGuid);
     
     if (!user) {
       return res.status(404).json({
@@ -75,11 +75,11 @@ exports.getCurrentUser = (req, res, next) => {
   }
 };
 
-exports.getByGuid = (req, res, next) => {
+exports.getByGuid = async (req, res, next) => {
   try {
     const { guid } = req.params;
     
-    const user = User.findByGuid(guid);
+    const user = await User.findByGuid(guid);
     
     if (!user) {
       return res.status(404).json({
@@ -98,7 +98,7 @@ exports.getByGuid = (req, res, next) => {
   }
 };
 
-exports.update = (req, res, next) => {
+exports.update = async (req, res, next) => {
   try {
     const { guid } = req.params;
     const { gender, birthYear, lastBackupTimestamp } = req.body;
@@ -112,7 +112,7 @@ exports.update = (req, res, next) => {
       return res.status(400).json({ error: 'Invalid birth year' });
     }
     
-    const user = User.update(guid, {
+    const user = await User.update(guid, {
       gender,
       birthYear: birthYear ? parseInt(birthYear) : null,
       lastBackupTimestamp: lastBackupTimestamp || null
@@ -137,10 +137,10 @@ exports.update = (req, res, next) => {
   }
 };
 
-exports.getAll = (req, res, next) => {
+exports.getAll = async (req, res, next) => {
   try {
-    const users = User.getAll();
-    
+    const users = await User.getAll();
+
     res.json({
       success: true,
       count: users.length,
@@ -156,7 +156,7 @@ exports.getAll = (req, res, next) => {
  * Gibt alle User-GUIDs zurück (nur für Admin-API-Keys)
  * Erfordert einen API-Key mit canReadAllUricAcid oder canReadAllMeals Berechtigung
  */
-exports.getAllGuids = (req, res, next) => {
+exports.getAllGuids = async (req, res, next) => {
   try {
     // Prüfe ob API-Key Admin-Berechtigung hat
     if (!req.apiKey) {
@@ -165,10 +165,10 @@ exports.getAllGuids = (req, res, next) => {
         error: 'API key authentication required'
       });
     }
-    
+
     // Prüfe ob API-Key Admin-Berechtigung hat (canReadAllUricAcid oder canReadAllMeals)
     const hasAdminPermission = req.apiKey.canReadAllUricAcid || req.apiKey.canReadAllMeals;
-    
+
     if (!hasAdminPermission) {
       logger.warn(`API key ${req.apiKey.name} (ID: ${req.apiKey.id}) attempted to access all user GUIDs without admin permission`);
       return res.status(403).json({
@@ -176,12 +176,12 @@ exports.getAllGuids = (req, res, next) => {
         error: 'Admin API key required. This endpoint requires canReadAllUricAcid or canReadAllMeals permission.'
       });
     }
-    
-    const users = User.getAll();
+
+    const users = await User.getAll();
     const guids = users.map(user => user.guid);
-    
+
     logger.info(`Admin API key ${req.apiKey.name} (ID: ${req.apiKey.id}) retrieved ${guids.length} user GUIDs`);
-    
+
     res.json(guids);
   } catch (error) {
     logger.error('Error fetching all user GUIDs:', error);
@@ -194,7 +194,7 @@ exports.getAllGuids = (req, res, next) => {
  * Löscht: Harnsäurewerte, Mahlzeiten, FoodItems, Thumbnails
  * Kann entweder über /users/:guid/backup-data (Admin) oder /users/delete-all (User selbst) aufgerufen werden
  */
-exports.deleteAllUserData = (req, res, next) => {
+exports.deleteAllUserData = async (req, res, next) => {
   try {
     // GUID kann aus params (Admin-Route) oder aus Header (User-Route) kommen
     const guid = req.params.guid || req.headers['x-user-guid'] || req.headers['X-User-Guid'];
@@ -207,7 +207,7 @@ exports.deleteAllUserData = (req, res, next) => {
     }
     
     // Finde User anhand der GUID
-    const user = User.findByGuid(guid);
+    const user = await User.findByGuid(guid);
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -224,9 +224,9 @@ exports.deleteAllUserData = (req, res, next) => {
     const Meal = require('../models/Meal');
     const FoodItem = require('../models/FoodItem');
     
-    const deletedUricAcid = UricAcidValue.deleteByUserId(userId);
-    const deletedMeals = Meal.deleteByUserId(userId);
-    const deletedFoodItems = FoodItem.deleteByUserId(userId);
+    const deletedUricAcid = await UricAcidValue.deleteByUserId(userId);
+    const deletedMeals = await Meal.deleteByUserId(userId);
+    const deletedFoodItems = await FoodItem.deleteByUserId(userId);
     
     // Lösche Thumbnails-Verzeichnis
     let deletedThumbnails = 0;
