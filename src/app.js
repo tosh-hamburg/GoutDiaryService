@@ -49,7 +49,7 @@ app.use(cors({
 }));
 
 // Security Headers
-// HINWEIS: CSP und HSTS wurden temporär deaktiviert, da Nginx als Reverse Proxy
+// HINWEIS: CSP und HSTS wurden deaktiviert, da Nginx als Reverse Proxy
 // das SSL terminiert und diese Header besser auf Nginx-Ebene gesetzt werden sollten
 app.use((req, res, next) => {
   // Verhindere Clickjacking
@@ -57,6 +57,10 @@ app.use((req, res, next) => {
 
   // Verhindere MIME-Type Sniffing
   res.setHeader('X-Content-Type-Options', 'nosniff');
+
+  // TEMPORÄR (bis ca. 13.12.2025): Lösche HSTS-Cache im Browser
+  // Dieser Header kann nach einer Woche entfernt werden
+  res.setHeader('Strict-Transport-Security', 'max-age=0');
 
   next();
 });
